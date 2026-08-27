@@ -91,8 +91,7 @@ class Company(models.Model):
     contact_email = models.EmailField(blank=True)
     contact_phone = models.CharField(max_length=20, blank=True)
 
-    # Deactivated, never deleted -- past drives and offers point at it, and
-    # removing the row would orphan a student's placement record.
+    
     is_active = models.BooleanField(default=True)
 
     created_by = models.ForeignKey(
@@ -125,15 +124,17 @@ class Drive(models.Model):
     """
     One company's recruitment visit.
 
-    The VISIT only -- dates, status, and the round sequence. The positions on
-    offer live on JobRole, because one visit can open several roles at
-    different packages with different cutoffs.
+    NO ROUNDS. There used to be DriveRound and RoundResult models here,
+    tracking a stage-by-stage selection process. They were removed: companies
+    run their own tests on their own platforms, so this college never sees
+    who cleared what. What it records is who ATTENDED and who got PLACED --
+    and a model for a process nobody runs is a table nobody fills in.
     """
 
     STATUS_CHOICES = [
         ('draft', 'Draft'),            # being set up, students cannot see it
         ('published', 'Published'),    # open for applications
-        ('closed', 'Closed'),          # deadline passed, rounds under way
+        ('closed', 'Closed'),          # deadline passed
         ('completed', 'Completed'),    # offers released
         ('cancelled', 'Cancelled'),    # company withdrew
     ]
@@ -254,65 +255,6 @@ class JobRole(models.Model):
         return f"{self.drive.company.name} - {self.title}"
 
 
-# ===================== DRIVE ROUND =====================
-class DriveRound(models.Model):
-    """
-    One round in a drive's selection process.
-
-    Rounds sit on the DRIVE, not the role: a company running aptitude ->
-    technical -> HR puts every candidate through the same rounds whatever
-    role they applied for. If per-role rounds are ever needed, that is a
-    nullable job_role FK added here -- not a copy of this table.
-
-    Rounds are ROWS, not columns. Fixed columns would force every drive into
-    the same shape and leave blanks meaning two different things (not held /
-    not reached).
-    """
-
-    ROUND_TYPE_CHOICES = [
-        ('screening', 'Screening'),        # the college's own shortlisting
-        ('aptitude', 'Aptitude Test'),
-        ('technical_test', 'Technical Test'),
-        ('coding', 'Coding Round'),
-        ('gd', 'Group Discussion'),
-        ('technical', 'Technical Interview'),
-        ('hr', 'HR Interview'),
-        ('other', 'Other'),
-    ]
-
-    drive = models.ForeignKey(
-        Drive,
-        on_delete=models.CASCADE,
-        related_name='rounds',
-    )
-
-    order = models.PositiveIntegerField()
-
-    name = models.CharField(max_length=150)
-
-    round_type = models.CharField(
-        max_length=30,
-        choices=ROUND_TYPE_CHOICES,
-        default='other',
-    )
-
-    round_date = models.DateField(null=True, blank=True)
-
-    description = models.TextField(blank=True)
-
-    class Meta:
-        ordering = ['drive', 'order']
-        constraints = [
-            models.UniqueConstraint(
-                fields=['drive', 'order'],
-                name='unique_round_order_per_drive',
-            ),
-        ]
-
-    def __str__(self):
-        return f"{self.drive} - {self.order}. {self.name}"
-
-
 # ===================== ELIGIBILITY RULE =====================
 class EligibilityRule(models.Model):
     """
@@ -376,9 +318,13 @@ class EligibilityRule(models.Model):
 
     allow_lateral_entry = models.BooleanField(default=True)
 
-    # Most colleges stop a placed student applying again. Some allow it above
-    # a package threshold ("dream offer"), hence a flag not an assumption.
-    allow_already_placed = models.BooleanField(default=False)
+
+    placed_package_cap = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
 
     notes = models.TextField(blank=True)
 
@@ -394,3 +340,197 @@ class EligibilityRule(models.Model):
 
     def __str__(self):
         return f"Eligibility for {self.job_role}"
+
+
+# ===================== APPLICATION =====================
+class Application(models.Model):
+    """
+    A student's decision about one JOB ROLE.
+
+    Applications attach to the role, not the drive: a student may apply for
+    Support Engineer and skip Software Engineer at the same company.
+
+    THREE STATES, ONLY TWO STORED. "Applied" and "opted out" are rows.
+    "No response" is the ABSENCE of a row -- every eligible student who has
+    not decided yet. Storing a row per non-response would mean generating
+    thousands of rows nobody created, and every one of them would need
+    updating whenever eligibility changed.
+    """
+
+    STATUS_CHOICES = [
+        ('applied', 'Applied'),
+        ('opted_out', 'Not interested'),
+        ('withdrawn', 'Withdrawn'),
+    ]
+
+    student = models.ForeignKey(
+        'users.User',
+        on_delete=models.CASCADE,
+        limit_choices_to={'role': 'student'},
+        related_name='placement_applications',
+    )
+
+    job_role = models.ForeignKey(
+        JobRole,
+        on_delete=models.CASCADE,
+        related_name='applications',
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='applied',
+    )
+
+    # Required when opting out, enforced in the serializer. A skipped drive
+    # with no reason tells the placement cell nothing -- and chasing students
+    # who quietly ignored a drive is most of the job.
+    opt_out_reason = models.TextField(blank=True)
+
+    # A SNAPSHOT of why the student was allowed to apply, taken at apply time.
+    # This is the one place a snapshot is right: it records what was true when
+    # the decision was made. Live eligibility answers "can they apply now",
+    # which is a different question once results change afterwards.
+    eligibility_snapshot = models.JSONField(null=True, blank=True)
+
+    applied_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-applied_at']
+        constraints = [
+            # One decision per student per role. Changing their mind updates
+            # this row rather than adding a second one, so the history stays
+            # readable and the counts cannot double.
+            models.UniqueConstraint(
+                fields=['student', 'job_role'],
+                name='unique_application_per_student_role',
+            ),
+        ]
+
+    @property
+    def is_active(self):
+        """Applied and not withdrawn -- the students a company will see."""
+        return self.status == 'applied'
+
+    def __str__(self):
+        return f"{self.student.username} -> {self.job_role} ({self.status})"
+
+
+# ===================== DRIVE ATTENDANCE =====================
+class DriveAttendance(models.Model):
+
+
+    STATUS_CHOICES = [
+        ('present', 'Present'),
+        ('absent', 'Absent'),
+    ]
+
+    application = models.OneToOneField(
+        'placement.Application',
+        on_delete=models.CASCADE,
+        related_name='drive_attendance',
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='present',
+    )
+
+    remarks = models.CharField(max_length=255, blank=True)
+
+    # The OD this created. Nullable for three real cases: the student was
+    # marked absent, the drive has no date so no OD is possible, or the row
+    # predates OD creation. Keeping the link means re-marking updates one OD
+    # instead of leaving a trail of them.
+    od_request = models.ForeignKey(
+        'attendance.ODRequest',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='drive_attendances',
+    )
+
+    marked_by = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='drive_attendance_marked',
+    )
+
+    marked_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-marked_at']
+
+    def __str__(self):
+        return f"{self.application.student.username} - {self.status}"
+
+
+# ===================== OFFER =====================
+class Offer(models.Model):
+    
+    STATUS_CHOICES = [
+        ('offered', 'Offered'),
+        ('accepted', 'Accepted'),
+        ('declined', 'Declined'),
+    ]
+
+    application = models.OneToOneField(
+        'placement.Application',
+        on_delete=models.CASCADE,
+        related_name='offer',
+    )
+
+    # Copied from JobRole at offer time rather than read live. The role's
+    # advertised package can be edited afterwards, and an offer must record
+    # what was actually offered -- a historical fact, not a lookup.
+    package_lpa = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+
+    offer_letter = models.FileField(
+        upload_to='offer_letters/',
+        null=True,
+        blank=True,
+    )
+
+    joining_date = models.DateField(null=True, blank=True)
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='offered',
+    )
+
+    remarks = models.CharField(max_length=255, blank=True)
+
+    offered_on = models.DateField(default=timezone.now)
+
+    # When the STUDENT accepted or declined. Null while undecided, which is a
+    # real state -- an offer nobody has answered yet.
+    decided_at = models.DateTimeField(null=True, blank=True)
+
+    recorded_by = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='offers_recorded',
+    )
+
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-offered_on']
+
+    def __str__(self):
+        return (
+            f"{self.application.student.username} - "
+            f"{self.application.job_role} ({self.status})"
+        )

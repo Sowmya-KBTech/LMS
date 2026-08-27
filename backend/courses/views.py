@@ -1918,7 +1918,7 @@ def parent_dashboard(request):
     children = profile.children.all()
     fees = Fee.objects.filter(student__in=children)
     pending_fees = sum(
-        f.amount for f in fees if f.status == 'pending')
+        (f.amount - f.paid_amount) for f in fees if f.paid_amount < f.amount)
     enrolled_ta_ids = Enrollment.objects.filter(
         student__in=children
     ).values_list('teaching_assignment_id', flat=True)

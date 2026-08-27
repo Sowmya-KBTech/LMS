@@ -73,11 +73,15 @@ import AcademicQuality from "./features/iqac/AcademicQuality";
 
 // ===== PLACEMENT =====
 import PlacementCoordinators from "./features/placement/PlacementCoordinators";
-import PlacementPlaceholder from "./features/placement/PlacementPlaceholder";
-import StudentPlacement from "./features/placement/StudentPlacement";
-import CoordinatorPlacement from "./features/placement/CoordinatorPlacement";
 import PlacementCompanies from "./features/placement/PlacementCompanies";
 import PlacementDrives from "./features/placement/PlacementDrives";
+import PlacementApplications from "./features/placement/PlacementApplications";
+import CoordinatorPlacement from "./features/placement/CoordinatorPlacement";
+import StudentPlacement from "./features/placement/StudentPlacement";
+import PlacementAttendance from "./features/placement/PlacementAttendance";
+import PlacementOffers from "./features/placement/PlacementOffers";
+import PlacementReports from "./features/placement/PlacementReports";
+import PlacementDashboard from "./features/placement/PlacementDashboard";
 
 // ================= USER HELPER =================
 const getUser = () => {
@@ -350,17 +354,21 @@ function App() {
 
         {/* ================= PLACEMENT — OFFICER ================= */}
         {/* "admin" matches the main admin / superuser; "placement_officer"
-            matches the sub_role. Both are readable from localStorage. */}
+            matches the sub_role. Both are readable from localStorage.
 
-        <Route path="/placement" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementPlaceholder page="dashboard" /> </ProtectedRoute> }/>
+            ONE route per path. As each screen is built, edit the COMPONENT on
+            its existing line -- never add a second <Route> for the same path.
+            React Router uses the FIRST match, so a leftover placeholder wins
+            silently and the new page never renders. */}
+
+        <Route path="/placement" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementDashboard /> </ProtectedRoute> }/>
         <Route path="/placement/coordinators" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementCoordinators /> </ProtectedRoute> }/>
-        <Route path="/placement/students" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementPlaceholder page="students" /> </ProtectedRoute> }/>
         <Route path="/placement/companies" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementCompanies /> </ProtectedRoute> }/>
         <Route path="/placement/drives" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementDrives /> </ProtectedRoute> }/>
-        <Route path="/placement/applications" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementPlaceholder page="applications" /> </ProtectedRoute> }/>
-        <Route path="/placement/interviews" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementPlaceholder page="interviews" /> </ProtectedRoute> }/>
-        <Route path="/placement/offers" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementPlaceholder page="offers" /> </ProtectedRoute> }/>
-        <Route path="/placement/reports" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementPlaceholder page="reports" /> </ProtectedRoute> }/>
+        <Route path="/placement/applications" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementApplications /> </ProtectedRoute> }/>
+        <Route path="/placement/interviews" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementAttendance /> </ProtectedRoute> }/>
+        <Route path="/placement/offers" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementOffers /> </ProtectedRoute> }/>
+        <Route path="/placement/reports" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementReports /> </ProtectedRoute> }/>
 
         {/* ================= PLACEMENT — COORDINATOR ================= */}
         {/* Coordinator is an assignment row, not a role, so localStorage cannot
