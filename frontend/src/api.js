@@ -1,14 +1,18 @@
-﻿import axios from "axios";
+import axios from "axios";
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api/",
+  baseURL: "http://127.0.0.1:8000/api/",
 });
 
 API.interceptors.request.use((req) => {
   const token = localStorage.getItem("token");
+
+  console.log("TOKEN:", token);
+
   if (token) {
-    req.headers["Authorization"] = `Bearer ${token}`;
+    req.headers["Authorization"] = `Bearer ${token}`; // ✅ FIXED
   }
+
   return req;
 });
 

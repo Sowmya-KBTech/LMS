@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 import os
 from dotenv import load_dotenv
 
@@ -10,9 +10,9 @@ load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
 
-DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
+DEBUG = True
 
-ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()]
+ALLOWED_HOSTS = []
 
 
 # ===================== INSTALLED APPS =====================
@@ -32,7 +32,8 @@ INSTALLED_APPS = [
     'exams',
     'events',
     'teachingplan',
-    'placement',
+    'mentoring',
+    'classgroups',
 
     # Third-party
     'rest_framework',
@@ -151,27 +152,9 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 
 # ===================== CORS + CSRF =====================
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = True   # dev only — lock this down before deployment
 CORS_ALLOW_CREDENTIALS = True
 
-# ===================== EMAIL =====================
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
-DEFAULT_FROM_EMAIL = os.environ.get("EMAIL_HOST_USER", "")
-
-
-# ===================== SECURITY (env-driven) =====================
-CORS_ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("DJANGO_CORS_ORIGINS", "").split(",") if o.strip()]
-CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
-
-_secure = os.environ.get("DJANGO_SECURE_COOKIES", "False") == "True"
-SESSION_COOKIE_SECURE = _secure
-CSRF_COOKIE_SECURE = _secure
-SECURE_SSL_REDIRECT = _secure
-
-
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",   # Vite dev server
+]

@@ -4,6 +4,7 @@ from .models import (
     TimeSlot,
     TimetableEntry,
     Semester,
+    Holiday,
     Room,
     ActivityType,
     ClassActivity,
@@ -111,32 +112,10 @@ class SemesterSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "start_date", "end_date", "is_active"]
 
 
-class HolidaySerializer(serializers.Serializer):
-    """
-    A holiday, backed by events.CalendarEvent -- NOT a timetable table.
-
-    A plain Serializer, not a ModelSerializer, because there is no longer a
-    timetable.Holiday model. There used to be: it held 3 rows while the
-    academic calendar held 44, and one of them (Ganesh Chaturthi, 14 June
-    2026) existed ONLY there -- so exams, teaching plans and attendance all
-    treated that day as a normal working day.
-
-    The shape stays exactly as it was (id, date, name) so the existing admin
-    screen keeps working; only the storage moved.
-    """
-
-    id = serializers.IntegerField(read_only=True)
-    date = serializers.DateField()
-    name = serializers.CharField(max_length=200)
-
-    def to_representation(self, instance):
-        # CalendarEvent calls them title / start_date; the screen expects
-        # name / date. Translated here rather than changing the frontend.
-        return {
-            "id": instance.id,
-            "date": instance.start_date,
-            "name": instance.title,
-        }
+class HolidaySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Holiday
+        fields = ["id", "date", "name"]
 
 
 # =====================================================

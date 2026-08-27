@@ -44,15 +44,3 @@ def on_fee(sender, instance, created, **kwargs):
         "Fee Payment Due",
         f"{instance.term}: ₹{instance.amount} due by {instance.due_date}",
         'announcement')
-
-# ---- Email every new Notification (covers all 25 create-sites + future ones) ----
-@receiver(post_save, sender=Notification)
-def email_on_notification(sender, instance, created, **kwargs):
-    if not created:
-        return
-    from .emails import send_notification_email
-    send_notification_email(
-        recipient=instance.recipient,
-        title=instance.title,
-        message=instance.message,
-    )

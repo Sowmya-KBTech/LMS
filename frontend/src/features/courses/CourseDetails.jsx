@@ -225,24 +225,6 @@ export default function CourseDetails() {
       );
     }
 
-    // ================= CREDITS ARE REQUIRED =================
-    // A blank credits box used to be sent as 0 (`Number(credits) || 0`).
-    // That is how 41 subjects ended up at zero credits with no error.
-    // CGPA is sum(grade_point * credits) / sum(credits), so a zero-credit
-    // subject silently drops out of the average - the number still looks
-    // plausible, it is just computed from the wrong syllabus.
-    if (
-      credits === "" ||
-      credits === null ||
-      Number.isNaN(Number(credits)) ||
-      Number(credits) <= 0
-    ) {
-
-      return alert(
-        "Enter credits for this subject (must be more than 0)"
-      );
-    }
-
     // the year is derived from the semester - make sure it exists
     if (!derivedYearExists || !yearId) {
 
@@ -256,11 +238,7 @@ export default function CourseDetails() {
       code: code,
       year: Number(yearId),
       semester: Number(semester),
-      // no `|| 0` fallback - the check above guarantees a real value, and
-      // leaving the fallback here would invite the same bug straight back.
-      credits: Number(credits),
-      // weekly_hours KEEPS its fallback on purpose: 0 weekly periods is a
-      // legitimate value (a subject that is not timetabled). 0 credits is not.
+      credits: Number(credits) || 0,
       weekly_hours: Number(weeklyHours) || 0,
       is_elective: isElective,
       department: department ? Number(department) : null,
@@ -596,11 +574,11 @@ export default function CourseDetails() {
                       }
                     />
 
-                    {/* CREDITS (required - min 1, never 0) */}
+                    {/* CREDITS */}
                     <input
                       type="number"
-                      min="1"
-                      placeholder="Credits *"
+                      min="0"
+                      placeholder="Credits"
                       value={credits}
                       onChange={(e) =>
                         setCredits(e.target.value)

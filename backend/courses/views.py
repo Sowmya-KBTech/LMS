@@ -9,11 +9,12 @@ from django.db import models
 from decimal import Decimal, InvalidOperation
 
 from rest_framework import viewsets
-from rest_framework.decorators import (  api_view, permission_classes, action)
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import ( IsAuthenticated, BasePermission, SAFE_METHODS)
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from rest_framework import status
+from rest_framework.decorators import (  api_view, permission_classes, action, parser_classes)
 
 from attendance.models import Attendance
 from .models import (
@@ -1918,7 +1919,7 @@ def parent_dashboard(request):
     children = profile.children.all()
     fees = Fee.objects.filter(student__in=children)
     pending_fees = sum(
-        (f.amount - f.paid_amount) for f in fees if f.paid_amount < f.amount)
+        f.amount for f in fees if f.status == 'pending')
     enrolled_ta_ids = Enrollment.objects.filter(
         student__in=children
     ).values_list('teaching_assignment_id', flat=True)
@@ -1953,26 +1954,6 @@ def parent_dashboard(request):
              'is_read':n.is_read,'created_at':n.created_at}
             for n in notifs],
     })
-
-def parent_display_name(parent_user, student_ids=None):
-    """'Ravi (Aarthi.R)' - parent name plus the child they belong to.
-
-    student_ids limits the children shown to those in the caller's own classes.
-
-    SINGLE SOURCE OF TRUTH: message_contacts() and chat_contacts() both use this.
-    """
-    from users.models import ParentProfile
-    profile = ParentProfile.objects.filter(user=parent_user).first()
-    if not profile:
-        return parent_user.username
-    kids = profile.children.all()
-    if student_ids is not None:
-        kids = kids.filter(id__in=student_ids)
-    names = list(kids.values_list('username', flat=True))
-    if not names:
-        return parent_user.username
-    return f"{parent_user.username} ({', '.join(names)})"
-
 
 # ===================== PARENT MESSAGES =====================
 @api_view(['GET'])
@@ -2016,9 +1997,12 @@ def message_contacts(request):
                 children__id__in=student_ids
             ).values_list('user_id', flat=True)
         ).distinct()
-        return Response([{'id': p.id, 'username': parent_display_name(p, student_ids), 'subject': 'Parent'} for p in parents])
+        return Response([{'id': p.id, 'username': p.username, 'subject': 'Parent'} for p in parents])
 
     return Response([])
+
+
+MAX_CHAT_UPLOAD = 10 * 1024 * 1024   # 10 MB, same as class group uploads
 
 
 @api_view(['GET', 'POST'])
@@ -2048,7 +2032,6 @@ def messages_with(request, user_id):
         notification_type='announcement',
     )
     return Response(ParentMessageSerializer(msg).data, status=201)
-
 
 # ===================== TEACHER BROADCAST TO PARENTS =====================
 @api_view(['POST'])
@@ -2086,79 +2069,243 @@ def broadcast_to_parents(request):
 
     return Response({'message': f'Sent to {count} parent(s).'})
 
-# ===================== CHAT: CONTACTS =====================
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def chat_contacts(request):
-    from .models import ConversationMessage
-    from users.models import ParentProfile
-    user = request.user
+# ===================== CHAT: WHO MAY TALK TO WHOM =====================
+def message_partner_ids(user):
+    """
+    Every user this person may hold a 1-to-1 conversation with.
 
-    if user.role == 'parent':
-        children = get_parent_children(user)
-        ta_ids = Enrollment.objects.filter(
-            student__in=children
-        ).values_list('teaching_assignment_id', flat=True)
-        teacher_ids = TeachingAssignment.objects.filter(
-            id__in=ta_ids
-        ).values_list('teacher_id', flat=True)
-        teachers = User.objects.filter(id__in=teacher_ids).distinct()
-        data = []
-        for t in teachers:
-            subjects = TeachingAssignment.objects.filter(
-                id__in=ta_ids, teacher=t
-            ).values_list('subject__name', flat=True)
-            data.append({'id': t.id, 'username': t.username,
-                         'subject': ', '.join(set(subjects))})
-        return Response(data)
+    ONE function, used by both chat_contacts and chat_with, so the list the
+    UI offers and the list the API accepts cannot drift apart. If an id is
+    not in here the message is refused, not merely hidden.
+
+    All relationships are two-way:
+      teacher <-> students of the class they advise   (courses.YearTutor)
+      teacher <-> their current mentees               (mentoring.MentorAllocation)
+      teacher <-> parents of students they teach      (existing behaviour)
+      student <-> their class advisor and their mentor
+      parent  <-> teachers who teach their children   (existing behaviour)
+
+    Student <-> student is deliberately absent.
+    """
+    from users.models import ParentProfile
+    from mentoring.models import MentorAllocation
+    from mentoring.utils import (
+        advised_student_ids, advisor_for_student, current_academic_year,
+    )
+
+    ids = set()
+    ay = current_academic_year()
 
     if user.role == 'teacher':
+        ids.update(advised_student_ids(user))
+
+        ids.update(
+            MentorAllocation.objects
+            .filter(mentor=user, academic_year=ay, is_active=True)
+            .values_list('student_id', flat=True)
+        )
+
         ta_ids = TeachingAssignment.objects.filter(
             teacher=user
         ).values_list('id', flat=True)
         student_ids = Enrollment.objects.filter(
             teaching_assignment_id__in=ta_ids
         ).values_list('student_id', flat=True)
-        parent_ids = ParentProfile.objects.filter(
-            children__id__in=student_ids
-        ).values_list('user_id', flat=True).distinct()
-        parents = User.objects.filter(id__in=parent_ids)
-        return Response([{'id': p.id, 'username': parent_display_name(p, student_ids), 'subject': 'Parent'}
-                         for p in parents])
+        ids.update(
+            ParentProfile.objects
+            .filter(children__id__in=student_ids)
+            .values_list('user_id', flat=True)
+        )
 
-    return Response([])
+    elif user.role == 'student':
+        advisor = advisor_for_student(user)
+        if advisor:
+            ids.add(advisor.id)
+
+        mentor_id = (
+            MentorAllocation.objects
+            .filter(student=user, academic_year=ay, is_active=True)
+            .values_list('mentor_id', flat=True)
+            .first()
+        )
+        if mentor_id:
+            ids.add(mentor_id)
+
+    elif user.role == 'parent':
+        children = get_parent_children(user)
+        ta_ids = Enrollment.objects.filter(
+            student__in=children
+        ).values_list('teaching_assignment_id', flat=True)
+        ids.update(
+            TeachingAssignment.objects
+            .filter(id__in=ta_ids)
+            .values_list('teacher_id', flat=True)
+        )
+
+    ids.discard(user.id)
+    return ids
+
+
+def can_message(user, other_id):
+    """True when `user` is allowed to message the user with id `other_id`."""
+    try:
+        return int(other_id) in message_partner_ids(user)
+    except (TypeError, ValueError):
+        return False
+
+
+# ===================== CHAT: CONTACTS =====================
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def chat_contacts(request):
+    from .models import ConversationMessage
+    from users.models import ParentProfile
+    from mentoring.models import MentorAllocation
+    from mentoring.utils import (
+        advised_student_ids, advisor_for_student, current_academic_year,
+    )
+
+    me = request.user
+    ay = current_academic_year()
+    allowed = message_partner_ids(me)
+    if not allowed:
+        return Response([])
+
+    by_id = {u.id: u for u in User.objects.filter(id__in=allowed)}
+
+    # why each person is a contact - drives the group headings in the UI
+    label = {}
+    group = {}
+
+    if me.role == 'teacher':
+        # This endpoint feeds /teacher/messages, which is the PARENT inbox.
+        # Students are reached from My Groups (class advisor) and My Mentees
+        # (mentor) — deliberately not listed here.
+        # The second line reads "Parent of Ajay.S · 21ME009": a teacher
+        # recognises the child, not the parent's name.
+        for p in (ParentProfile.objects
+                  .filter(user_id__in=allowed)
+                  .prefetch_related('children')):
+            kids = []
+            for child in p.children.all():
+                nm = (child.get_full_name() or "").strip() or child.username
+                kids.append(nm + (f" · {child.roll_number}" if child.roll_number else ""))
+            label[p.user_id] = (
+                "Parent of " + " and ".join(kids) if kids else "Parent"
+            )
+            group[p.user_id] = 'Parents'
+
+    elif me.role == 'student':
+        advisor = advisor_for_student(me)
+        if advisor:
+            label[advisor.id] = 'Class advisor'
+            group[advisor.id] = 'My class advisor'
+
+        mentor_id = (MentorAllocation.objects
+                     .filter(student=me, academic_year=ay, is_active=True)
+                     .values_list('mentor_id', flat=True).first())
+        if mentor_id:
+            if mentor_id in label:
+                label[mentor_id] = 'Class advisor / mentor'
+            else:
+                label[mentor_id] = 'My mentor'
+                group[mentor_id] = 'My mentor'
+
+    elif me.role == 'parent':
+        for tid in allowed:
+            subjects = TeachingAssignment.objects.filter(
+                teacher_id=tid
+            ).values_list('subject__name', flat=True)
+            label[tid] = ', '.join(sorted(set(s for s in subjects if s))) or 'Teacher'
+            group[tid] = 'Teachers'
+
+    unread = {}
+    for sid in ConversationMessage.objects.filter(
+        receiver=me, sender_id__in=allowed, is_read=False
+    ).exclude(context="mentor").values_list('sender_id', flat=True):
+        unread[sid] = unread.get(sid, 0) + 1
+
+    data = []
+    for uid in allowed:
+        u = by_id.get(uid)
+        if not u:
+            continue
+        # a teacher's contact list is parents only; students are unlabelled
+        # here and must not appear
+        if me.role == 'teacher' and uid not in label:
+            continue
+        data.append({
+            'id': uid,
+            'username': u.username,
+            'subject': label.get(uid, ''),        # TeacherChat already renders this
+            'group': group.get(uid, 'Contacts'),  # new - for the group headings
+            'roll_number': getattr(u, 'roll_number', '') or '',
+            'unread': unread.get(uid, 0),
+        })
+
+    data.sort(key=lambda d: (-d['unread'], d['group'], d['username']))
+    return Response(data)
 
 
 # ===================== CHAT: MESSAGES =====================
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
 def chat_with(request, user_id):
     from .models import ConversationMessage
     from .serializers import ConversationMessageSerializer
     me = request.user
 
+    # the relationship is checked here, not by hiding a button in the UI
+    if not can_message(me, user_id):
+        return Response(
+            {'detail': 'You are not allowed to message this person.'},
+            status=403,
+        )
+
+    # this endpoint owns the advisor and parent threads. The mentor thread
+    # belongs to the mentoring module and is never read or written here.
+    other = User.objects.filter(id=user_id).first()
+    ctx = ("parent" if (me.role == "parent" or (other and other.role == "parent"))
+           else "advisor")
+
     if request.method == 'GET':
         msgs = ConversationMessage.objects.filter(
             sender_id__in=[me.id, user_id],
             receiver_id__in=[me.id, user_id],
+            context=ctx,
         ).order_by('created_at')
         ConversationMessage.objects.filter(
-            sender_id=user_id, receiver=me, is_read=False
+            sender_id=user_id, receiver=me, is_read=False, context=ctx
         ).update(is_read=True)
-        return Response(ConversationMessageSerializer(msgs, many=True).data)
+        return Response(ConversationMessageSerializer(
+            msgs, many=True, context={'request': request}).data)
 
     text = (request.data.get('text') or '').strip()
-    if not text:
-        return Response({'detail': 'Message cannot be empty.'}, status=400)
+    att = request.FILES.get('attachment')
+
+    # a message needs words or a file — an empty one helps nobody
+    if not text and not att:
+        return Response({'detail': 'Write something or attach a file.'}, status=400)
+
+    if att and att.size > MAX_CHAT_UPLOAD:
+        return Response(
+            {'detail': f'That file is {att.size // (1024 * 1024)} MB. The limit is 10 MB.'},
+            status=400,
+        )
+
     msg = ConversationMessage.objects.create(
-        sender=me, receiver_id=user_id, text=text)
+        sender=me, receiver_id=user_id, text=text, context=ctx, attachment=att)
     Notification.objects.create(
         recipient_id=user_id,
         title="New message",
         message=f"{me.username}: {text[:50]}",
         notification_type='announcement',
     )
-    return Response(ConversationMessageSerializer(msg).data, status=201)
+    return Response(
+        ConversationMessageSerializer(msg, context={'request': request}).data,
+        status=201,
+    )
 
 
 # ===================== MANAGE PARENTS (ADMIN) =====================
@@ -2240,4 +2387,3 @@ def update_parent_children(request, profile_id):
         profile.children.set(User.objects.filter(id__in=child_ids, role='student'))
 
     return Response({'message': 'Parent updated.'})
-

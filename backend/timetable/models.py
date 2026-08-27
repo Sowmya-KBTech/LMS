@@ -57,6 +57,9 @@ class TimetableEntry(models.Model):
         (SAT, "Saturday"),
     ]
 
+    # links to the existing courses app (no data duplicated).
+    # NULL when this entry is an ACTIVITY (mentor, library, sports) — an
+    # activity has no subject and no teaching assignment behind it.
     assignment = models.ForeignKey(
         'courses.TeachingAssignment',
         on_delete=models.CASCADE,
@@ -109,8 +112,15 @@ class TimetableEntry(models.Model):
     class Meta:
         ordering = ['day_of_week', 'time_slot__period_no']
 
+        # A class (year + that subject's semester) can't have the same subject's
+        # assignment placed twice in the same day+slot. The richer clash rules
+        # (class clash by year+semester, teacher clash) are enforced in the view,
+        # because they depend on related fields.
         constraints = [
-            
+            # Only for CLASS entries. `assignment` is NULL on activities, and in
+            # SQL, NULL never equals NULL — so this constraint would silently
+            # allow ten activities in one cell. The condition excludes them; the
+            # one-thing-per-cell rule is enforced in the view for both kinds.
             models.UniqueConstraint(
                 fields=['assignment', 'day_of_week', 'time_slot'],
                 condition=models.Q(assignment__isnull=False),
@@ -166,6 +176,36 @@ class Semester(models.Model):
         return f"{self.name} ({self.start_date} to {self.end_date})"
 
 
+# =====================================================
+#  HOLIDAY  — a single date that overrides classes
+#  (Sports Day, Independence Day, etc.)
+# =====================================================
+class Holiday(models.Model):
+
+    date = models.DateField(unique=True)
+    name = models.CharField(max_length=120)
+
+    class Meta:
+        ordering = ["date"]
+
+    def __str__(self):
+        return f"{self.date} - {self.name}"
+
+
+# =====================================================
+#  TIMETABLE APPROVAL  — one row per class (year + semester)
+#  Tracks the HOD-submit -> admin-approve workflow.
+#
+#  status:
+#    draft      -> HOD is still building (default)
+#    submitted  -> HOD sent it to the admin for review (locked from editing)
+#    approved   -> admin approved; ONLY approved classes are shown to
+#                  students / teachers in their timetable view
+#    rejected   -> admin sent it back with a remark; HOD can edit + resubmit
+#
+#  A class is identified by (year, semester). The course is stored too,
+#  for display on the admin's approvals list.
+# =====================================================
 class TimetableApproval(models.Model):
 
     class Status(models.TextChoices):

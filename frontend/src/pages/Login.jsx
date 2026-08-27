@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Login() {
@@ -22,7 +22,7 @@ function Login() {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api/"}users/login/`,
+        "http://127.0.0.1:8000/api/users/login/",
         {
           method: "POST",
           headers: {
@@ -36,9 +36,12 @@ function Login() {
       console.log("LOGIN RESPONSE:", data);
 
       if (response.ok) {
-        // SAVE TOKEN
+        // ✅ SAVE TOKEN
         localStorage.setItem("token", data.access);
         localStorage.setItem("user", JSON.stringify(data));
+
+        const role = (data.role || "").toLowerCase();
+        const subRole = (data.sub_role || "").toLowerCase();
 
         // first-login users must set a new password before anything else
         if (data.must_change_password === true) {
@@ -46,17 +49,41 @@ function Login() {
           return;
         }
 
-        // ================= WHERE TO LAND =================
-        // Decided in ONE place: RoleRedirect in App.jsx.
-        //
-        // This used to be a second copy of that same role/sub_role ladder,
-        // and the two drifted: placement_officer was added to RoleRedirect
-        // but not here, so the placement officer fell through to /dashboard,
-        // which is adminOnly, which bounced them straight back to the login
-        // page. Login succeeded and still looked broken.
-        //
-        // Adding a new role now means editing RoleRedirect only.
-        navigate("/home");
+        // superuser -> always the main admin dashboard
+        if (data.is_superuser === true) {
+          navigate("/dashboard");
+        }
+        // admins: decide by sub_role
+        else if (role === "admin") {
+          if (subRole === "accounts_admin") {
+            navigate("/admin/fees");   // ACCOUNTS ADMIN
+          }
+          else if (subRole === "exam_admin") {
+            navigate("/results");      // EXAMINATION ADMIN
+          }
+          else if (subRole === "academic_admin") {
+            navigate("/courses");      // ACADEMIC ADMIN
+          }
+          else if (subRole === "iqac_admin") {
+            navigate("/iqac");         // IQAC ADMIN
+          }
+          else {
+            navigate("/dashboard");    // plain / super admin
+          }
+        }
+        else if (role === "teacher") {
+          navigate("/teacher");        // TEACHER
+        }
+        else if (role === "student") {
+          navigate("/student");        // STUDENT
+        }
+        else if (role === "parent") {
+          navigate("/parent");         // PARENT
+        }
+        else {
+          console.log("Unknown role:", data);
+          setError("Invalid role");
+        }
       } else {
         setError(data.error || "Invalid credentials");
       }
@@ -79,7 +106,7 @@ function Login() {
     <div style={styles.page}>
       <div style={styles.wrapper}>
 
-        {/* Left panel */}
+        {/* ── Left panel ── */}
         <div style={styles.left}>
           <div style={styles.blobTopLeft} />
           <div style={styles.blobBottomRight} />
@@ -104,7 +131,7 @@ function Login() {
           </div>
         </div>
 
-        {/* Right panel */}
+        {/* ── Right panel ── */}
         <div style={styles.right}>
           <div style={styles.formBox}>
 
@@ -194,7 +221,7 @@ const styles = {
     boxShadow: "0 24px 64px rgba(30,64,175,0.18)",
   },
 
-  // Left
+  // ── Left ──
   left: {
     flex: 1,
     background: "#1d4ed8",
@@ -288,7 +315,7 @@ const styles = {
     border: "0.5px solid rgba(255,255,255,0.25)",
   },
 
-  // Right
+  // ── Right ──
   right: {
     width: 420,
     background: "#ffffff",

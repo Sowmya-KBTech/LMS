@@ -1,6 +1,4 @@
 from django.contrib.auth.models import AbstractUser
-from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
 
@@ -34,21 +32,6 @@ class Department(models.Model):
         unique=True
     )
 
-    # ================= SHORT CODE =================
-    # Single source of truth for the department's short code (CS, IT, ECE...).
-    # Used in roll numbers and, later, in placement branch eligibility.
-    # This used to be a dict hardcoded inside User.save() where nothing else
-    # could read or validate against it -- which is how EC and EEE ended up
-    # inconsistent in live roll numbers.
-    # unique + null (not blank-only) so two departments can never share a code,
-    # while departments that have not been given one yet stay NULL.
-    code = models.CharField(
-        max_length=10,
-        unique=True,
-        null=True,
-        blank=True,
-    )
-
     hod = models.ForeignKey(
         'users.User',
         on_delete=models.SET_NULL,
@@ -60,12 +43,6 @@ class Department(models.Model):
 
     class Meta:
         ordering = ['name']
-
-    def save(self, *args, **kwargs):
-        # Codes are always stored uppercase so lookups never depend on casing.
-        if self.code:
-            self.code = self.code.strip().upper()
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -96,7 +73,6 @@ class User(AbstractUser):
         ('exam_admin', 'Examination Admin'),
         ('accounts_admin', 'Accounts Admin'),
         ('iqac_admin', 'IQAC Admin'),
-        ('placement_officer', 'Placement Officer'),
         ('super_admin', 'Super Admin'),
         # non-teaching
         ('office_assistant', 'Office Assistant'),
@@ -194,10 +170,19 @@ class User(AbstractUser):
         ):
 
             # ================= DEPARTMENT CODE =================
-            # Read from Department.code -- one definition, editable in admin.
-            # "GN" only when the department is missing or has no code set.
-            if self.department and self.department.code:
-                dept_code = self.department.code
+            DEPT_CODES = {
+                "Computer Science": "CS",
+                "Information Technology": "IT",
+                "Electronics and Communication": "ECE",
+                "Electrical and Electronics": "EEE",
+                "Mechanical": "ME",
+                "Civil": "CE",
+                "Chemistry": "CH",
+                "Mathematics": "MA",
+            }
+
+            if self.department:
+                dept_code = DEPT_CODES.get(self.department.name, "GN")
             else:
                 dept_code = "GN"
 
@@ -281,132 +266,6 @@ class StudentProfile(models.Model):
 
     def __str__(self):
         return f"Profile of {self.user.username}"
-
-
-# ================= PRIOR ACADEMICS (SCHOOL / DIPLOMA) =================
-class PriorAcademics(models.Model):
-    """
-    A student's education BEFORE joining the college -- 10th, 12th, diploma.
-
-    Lives in `users`, not `placement`, on purpose: these are permanent facts
-    about the student. They were true before admission and stay true after
-    graduation. Placement is simply the first module to need them; admissions,
-    IQAC and transcripts will want them too. If the placement app were ever
-    removed, this data should survive.
-
-    Percentages are Decimal, never Float. These get compared against company
-    cutoffs (>= 60), and float arithmetic can turn 60.0 into 59.999999 and
-    silently reject an eligible student.
-
-    Marksheet uploads are deliberately NOT here yet. Add them as nullable
-    FileFields if a college asks -- that needs a migration but no backfill.
-    """
-
-    PERCENT_VALIDATORS = [
-        MinValueValidator(0),
-        MaxValueValidator(100),
-    ]
-
-    student = models.OneToOneField(
-        'users.User',
-        on_delete=models.CASCADE,
-        related_name='prior_academics',
-        limit_choices_to={'role': 'student'},
-    )
-
-    # ---------------- 10th ----------------
-    # Every student has a 10th, lateral entry or not.
-    tenth_percent = models.DecimalField(
-        max_digits=5,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        validators=PERCENT_VALIDATORS,
-    )
-    tenth_board = models.CharField(max_length=100, blank=True)   # State Board / CBSE / ICSE
-    tenth_year = models.IntegerField(null=True, blank=True)      # year of passing
-
-    # ---------------- LATERAL ENTRY ----------------
-    # A lateral entry student joins in 2nd year with a diploma instead of a 12th.
-    # This flag decides WHICH qualification the eligibility check reads, so it
-    # must never be guessed from whichever field happens to be filled in.
-    is_lateral_entry = models.BooleanField(default=False)
-
-    # ---------------- 12th ----------------
-    # Blank for lateral entry students.
-    twelfth_percent = models.DecimalField(
-        max_digits=5,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        validators=PERCENT_VALIDATORS,
-    )
-    twelfth_board = models.CharField(max_length=100, blank=True)
-    twelfth_year = models.IntegerField(null=True, blank=True)
-
-    # ---------------- DIPLOMA ----------------
-    # Blank for regular students.
-    diploma_percent = models.DecimalField(
-        max_digits=5,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        validators=PERCENT_VALIDATORS,
-    )
-    diploma_branch = models.CharField(max_length=150, blank=True)
-    diploma_year = models.IntegerField(null=True, blank=True)
-
-    # ---------------- VERIFICATION ----------------
-    # Students enter their own marks, so anyone could type 95%. Eligibility
-    # treats UNVERIFIED marks as not-yet-eligible -- nobody types their way
-    # into a drive. The coordinator's Profile Verification screen sets this.
-    verified = models.BooleanField(default=False)
-
-    verified_by = models.ForeignKey(
-        'users.User',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='prior_academics_verified',
-        limit_choices_to={'role': 'teacher'},
-    )
-
-    verified_at = models.DateTimeField(null=True, blank=True)
-
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = "Prior academics"
-        verbose_name_plural = "Prior academics"
-
-    # ---------------- VALIDATION ----------------
-    def clean(self):
-        errors = {}
-
-        if self.is_lateral_entry:
-            if self.diploma_percent is None:
-                errors['diploma_percent'] = (
-                    "Diploma percentage is required for a lateral entry student."
-                )
-        else:
-            if self.twelfth_percent is None:
-                errors['twelfth_percent'] = (
-                    "12th percentage is required for a regular student."
-                )
-
-        if errors:
-            raise ValidationError(errors)
-
-    # ---------------- QUALIFYING MARK ----------------
-    @property
-    def qualifying_percent(self):
-
-        if self.is_lateral_entry:
-            return self.diploma_percent
-        return self.twelfth_percent
-
-    def __str__(self):
-        return f"Prior academics of {self.student.username}"
 
 
 # ================= FACULTY / STAFF PROFILE =================

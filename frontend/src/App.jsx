@@ -61,6 +61,15 @@ import ParentMessage from "./pages/Parent/ParentMessage";
 
 import HODDepartment from "./features/hod/HODDepartment";
 import HodAllocation from "./features/hod/HodAllocation";
+import HodMentorAllocation from "./features/mentoring/HodMentorAllocation";
+import HodMentorDashboard from "./features/mentoring/HodMentorDashboard";
+import HodMentorDetail from "./features/mentoring/HodMentorDetail";
+import HodAllocationHistory from "./features/mentoring/HodAllocationHistory";
+import HodChangeRequests from "./features/mentoring/HodChangeRequests";
+import HodMentoringSettings from "./features/mentoring/HodMentoringSettings";
+import StaffMyMentees from "./features/mentoring/StaffMyMentees";
+import StudentMyMentor from "./features/mentoring/StudentMyMentor";
+import ClassGroups from "./features/classgroups/ClassGroups";
 import MyClass from "./features/tutor/MyClass";
 import TeacherTeachingPlan from "./features/teachingplan/TeacherTeachingPlan";
 import HODTeachingPlan from "./features/teachingplan/HODTeachingPlan";
@@ -70,18 +79,6 @@ import HODTeachingPlan from "./features/teachingplan/HODTeachingPlan";
 import FacultyContributions from "./features/iqac/FacultyContributions";
 import IqacDashboard from "./features/iqac/IqacDashboard";
 import AcademicQuality from "./features/iqac/AcademicQuality";
-
-// ===== PLACEMENT =====
-import PlacementCoordinators from "./features/placement/PlacementCoordinators";
-import PlacementCompanies from "./features/placement/PlacementCompanies";
-import PlacementDrives from "./features/placement/PlacementDrives";
-import PlacementApplications from "./features/placement/PlacementApplications";
-import CoordinatorPlacement from "./features/placement/CoordinatorPlacement";
-import StudentPlacement from "./features/placement/StudentPlacement";
-import PlacementAttendance from "./features/placement/PlacementAttendance";
-import PlacementOffers from "./features/placement/PlacementOffers";
-import PlacementReports from "./features/placement/PlacementReports";
-import PlacementDashboard from "./features/placement/PlacementDashboard";
 
 // ================= USER HELPER =================
 const getUser = () => {
@@ -169,8 +166,6 @@ function RoleRedirect() {
       return (<Navigate to="/courses" replace />);
     if (subRole === "iqac_admin")
       return (<Navigate to="/iqac" replace />);
-    if (subRole === "placement_officer")
-      return (<Navigate to="/placement" replace />);
     return (<Navigate to="/dashboard" replace />);   // plain admin
   }
 
@@ -340,46 +335,50 @@ function App() {
   }
 />
         <Route
-              path="/hod/allocation"
-              element={
-                <ProtectedRoute role="teacher">
-                  <HodAllocation />
-                </ProtectedRoute>
-              }
-            />
+          path="/hod/allocation"
+          element={
+            <ProtectedRoute role="teacher">
+              <HodAllocation />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= MENTOR ALLOCATION ================= */}
+        <Route
+          path="/hod/mentor-allocation"
+          element={
+            <ProtectedRoute role="teacher">
+              <HodMentorAllocation />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="/hod/mentor-dashboard" element={
+          <ProtectedRoute role="teacher"><HodMentorDashboard /></ProtectedRoute>} />
+                <Route path="/hod/mentor-change-requests" element={
+          <ProtectedRoute role="teacher"><HodChangeRequests /></ProtectedRoute>} />
+        <Route path="/hod/mentor-history" element={
+          <ProtectedRoute role="teacher"><HodAllocationHistory /></ProtectedRoute>} />
+        <Route path="/hod/mentor-settings" element={
+          <ProtectedRoute role="teacher"><HodMentoringSettings /></ProtectedRoute>} />
+        <Route path="/hod/mentors/:mentorId" element={
+          <ProtectedRoute role="teacher"><HodMentorDetail /></ProtectedRoute>} />
+
+        {/* ================= MY MENTEES (STAFF) ================= */}
+        <Route path="/my-mentees" element={
+          <ProtectedRoute role="teacher"><StaffMyMentees /></ProtectedRoute>} />
+
+        {/* ================= MY MENTOR (STUDENT) ================= */}
+        <Route path="/my-mentor" element={
+          <ProtectedRoute role="student"><StudentMyMentor /></ProtectedRoute>} />
+
+        {/* ================= CLASS GROUPS ================= */}
+        <Route path="/my-groups" element={
+          <ProtectedRoute roles={["teacher", "student"]}><ClassGroups /></ProtectedRoute>} />
 
         {/* ================= IQAC DASHBOARD ================= */}
         <Route path="/iqac" element={<ProtectedRoute role="iqac_admin"> <IqacDashboard /> </ProtectedRoute>} />
         <Route path="/iqac/academic-quality" element={<ProtectedRoute role="iqac_admin"> <AcademicQuality /> </ProtectedRoute>} />
-
-        {/* ================= PLACEMENT — OFFICER ================= */}
-        {/* "admin" matches the main admin / superuser; "placement_officer"
-            matches the sub_role. Both are readable from localStorage.
-
-            ONE route per path. As each screen is built, edit the COMPONENT on
-            its existing line -- never add a second <Route> for the same path.
-            React Router uses the FIRST match, so a leftover placeholder wins
-            silently and the new page never renders. */}
-
-        <Route path="/placement" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementDashboard /> </ProtectedRoute> }/>
-        <Route path="/placement/coordinators" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementCoordinators /> </ProtectedRoute> }/>
-        <Route path="/placement/companies" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementCompanies /> </ProtectedRoute> }/>
-        <Route path="/placement/drives" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementDrives /> </ProtectedRoute> }/>
-        <Route path="/placement/applications" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementApplications /> </ProtectedRoute> }/>
-        <Route path="/placement/interviews" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementAttendance /> </ProtectedRoute> }/>
-        <Route path="/placement/offers" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementOffers /> </ProtectedRoute> }/>
-        <Route path="/placement/reports" element={ <ProtectedRoute roles={["admin", "placement_officer"]}> <PlacementReports /> </ProtectedRoute> }/>
-
-        {/* ================= PLACEMENT — COORDINATOR ================= */}
-        {/* Coordinator is an assignment row, not a role, so localStorage cannot
-            prove it — this route only checks "is a teacher". The sidebar hides
-            the link from non-coordinators, and the API refuses their data. */}
-
-        <Route path="/placement/coordinator" element={ <ProtectedRoute role="teacher"> <CoordinatorPlacement /> </ProtectedRoute> }/>
-
-        {/* ================= PLACEMENT — STUDENT ================= */}
-
-        <Route path="/student/placement" element={ <ProtectedRoute role="student"> <StudentPlacement /> </ProtectedRoute> }/>
 
         {/* ===== FALLBACK ===== */}
         <Route path="*" element={ <Navigate to="/" replace/>}/>

@@ -25,7 +25,12 @@ urlpatterns = [
     path("api/", include("exams.urls")),
     path("api/", include("events.urls")),
     path("api/", include("teachingplan.urls")),
-    path("api/placement/", include("placement.urls")),
+
+    # ================= MENTORING APP =================
+    path("api/", include("mentoring.urls")),
+
+    # ================= CLASS GROUPS APP =================
+    path("api/", include("classgroups.urls")),
 ]
 
 # ================= MEDIA FILES =================

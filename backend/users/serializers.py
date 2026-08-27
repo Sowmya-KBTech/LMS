@@ -53,6 +53,10 @@ class UserSerializer(serializers.ModelSerializer):
     role_label = serializers.CharField(source='get_role_display', read_only=True)
     sub_role_label = serializers.CharField(source='get_sub_role_display', read_only=True)
 
+    # ---- profile ----
+    # WRITE: the frontend sends a single "profile" object with the detail
+    #        fields (address, dob, qualification, etc.).
+    # READ:  "profile_data" returns that user's profile back.
     profile = serializers.DictField(write_only=True, required=False)
     profile_data = serializers.SerializerMethodField()
 
@@ -102,7 +106,7 @@ class UserSerializer(serializers.ModelSerializer):
             return obj.department.name[:3].upper()
         return ""
 
-
+    # ================= PROFILE READ =================
     # ================= PROFILE READ =================
     def get_profile_data(self, obj):
         if obj.role == 'student' and hasattr(obj, 'student_profile'):
@@ -214,6 +218,9 @@ class UserSerializer(serializers.ModelSerializer):
         profile_data = validated_data.pop('profile', None)
         password = validated_data.pop('password', None)
 
+        # remember the class this student was in BEFORE the edit
+        was_class = (instance.course_id, instance.year, instance.semester)
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
@@ -221,6 +228,18 @@ class UserSerializer(serializers.ModelSerializer):
             instance.set_password(password)
 
         instance.save()
+
+        # ---- re-enroll a student whose class changed ----
+        # Enrollment rows are what give a subject group its audience. They are
+        # created on student creation, CSV import, promotion and new subject
+        # assignment — nothing created them when an existing student was edited
+        # into another year or semester, so their subject groups came up empty.
+        # Add-only, exactly like the promotion flow: old rows are kept.
+        if instance.role == 'student':
+            now_class = (instance.course_id, instance.year, instance.semester)
+            if now_class != was_class:
+                from courses.services import enroll_student
+                enroll_student(instance)
 
         if profile_data is not None:
             self._save_profile(instance, profile_data)
