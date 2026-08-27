@@ -15,23 +15,10 @@ from .models import (
     Company,
     Drive,
     JobRole,
-    DriveRound,
     EligibilityRule,
-)
-
-from .serializers import (
-    CompanySerializer,
-    DepartmentLiteSerializer,
-    DriveRoundSerializer,
-    DriveSerializer,
-    EligibilityRuleSerializer,
-    JobRoleSerializer,
-    MyAcademicsSerializer,
-    PlacementCoordinatorSerializer,
-    StudentAcademicsSerializer,
-    StudentDriveSerializer,
-    StudentJobRoleSerializer,
-    TeacherLiteSerializer,
+    Application,
+    DriveAttendance,
+    Offer,
 )
 from .permissions import (
     can_manage_placement,
@@ -43,6 +30,26 @@ from .permissions import (
     is_super_admin,
     scope_students_for,
 )
+from .serializers import (
+    ApplicationSerializer,
+    CompanySerializer,
+    DepartmentLiteSerializer,
+    DriveAttendanceSerializer,
+    DriveSerializer,
+    EligibilityRuleSerializer,
+    JobRoleSerializer,
+    MyAcademicsSerializer,
+    OfferSerializer,
+    PlacementCoordinatorSerializer,
+    StaffApplicationSerializer,
+    StudentAcademicsSerializer,
+    StudentDriveSerializer,
+    StudentJobRoleSerializer,
+    StudentOfferSerializer,
+    TeacherLiteSerializer,
+)
+from .services import create_drive_od, cancel_drive_od
+
 
 # ===================== WHO AM I (placement context) =====================
 @api_view(["GET"])
@@ -54,8 +61,6 @@ def placement_me(request):
 
     The frontend calls this once on load to decide which portal to show, so
     the sidebar and route guards read from the SAME rules the API enforces.
-    A frontend that decides for itself will eventually disagree with the
-    backend, and the user sees a screen they cannot actually use.
     """
     user = request.user
     department = coordinator_department(user)
@@ -83,13 +88,9 @@ def coordinator_list(request):
     """
     GET  -> list coordinator assignments
     POST -> assign a teacher as coordinator for a department
-
-    Only the placement officer assigns coordinators. A coordinator can see
-    the list (so they know who their counterparts are) but cannot change it.
     """
     user = request.user
 
-    # ---------------- LIST ----------------
     if request.method == "GET":
 
         if not can_view_placement_staff(user):
@@ -103,17 +104,14 @@ def coordinator_list(request):
             .select_related("teacher", "department", "assigned_by")
         )
 
-        # `?active=true` / `?active=false`, default all
         active = request.query_params.get("active")
         if active == "true":
             queryset = queryset.filter(is_active=True)
         elif active == "false":
             queryset = queryset.filter(is_active=False)
 
-        serializer = PlacementCoordinatorSerializer(queryset, many=True)
-        return Response(serializer.data)
+        return Response(PlacementCoordinatorSerializer(queryset, many=True).data)
 
-    # ---------------- CREATE ----------------
     if not can_manage_placement(user):
         return Response(
             {"detail": "Only the placement officer can assign coordinators."},
@@ -138,8 +136,8 @@ def coordinator_detail(request, pk):
     PATCH  -> update an assignment (usually is_active = false to end it)
     DELETE -> deactivate, NOT remove
 
-    Delete is a soft delete on purpose: once drives and applications reference
-    a coordinator's actions, removing the row would orphan that history.
+    Soft delete: once drives and applications reference a coordinator's
+    actions, removing the row would orphan that history.
     """
     user = request.user
 
@@ -157,20 +155,13 @@ def coordinator_detail(request, pk):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    # ---------------- SOFT DELETE ----------------
     if request.method == "DELETE":
         assignment.is_active = False
         assignment.save(update_fields=["is_active"])
-        return Response(
-            {"detail": "Coordinator assignment deactivated."},
-            status=status.HTTP_200_OK,
-        )
+        return Response({"detail": "Coordinator assignment deactivated."})
 
-    # ---------------- UPDATE ----------------
     serializer = PlacementCoordinatorSerializer(
-        assignment,
-        data=request.data,
-        partial=True,
+        assignment, data=request.data, partial=True,
     )
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -183,17 +174,11 @@ def coordinator_detail(request, pk):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def assignable_teachers(request):
-    """
-    Teachers who can be made coordinators, for the assign dropdown.
-    Optional `?department=<id>` to narrow to one department.
-    """
+    """Teachers who can be made coordinators, for the assign dropdown."""
     user = request.user
 
     if not can_manage_placement(user):
-        return Response(
-            {"detail": "Not allowed."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
+        return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
 
     queryset = (
         User.objects
@@ -218,16 +203,10 @@ def placement_departments(request):
 
     Service departments (Mathematics, Physics, Tamil...) own subjects but have
     no students of their own, so they must never appear as a placement branch.
-    Tested by whether any student belongs to them -- no extra flag to maintain,
-    nothing to keep in sync.
+    Tested by whether any student belongs to them -- no extra flag to maintain.
     """
-    user = request.user
-
-    if not can_view_placement_staff(user):
-        return Response(
-            {"detail": "Not allowed."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
+    if not can_view_placement_staff(request.user):
+        return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
 
     queryset = (
         Department.objects
@@ -237,7 +216,6 @@ def placement_departments(request):
     )
 
     return Response(DepartmentLiteSerializer(queryset, many=True).data)
-
 
 # ===================== MY ACADEMICS (STUDENT) =====================
 @api_view(["GET", "PUT"])
@@ -266,7 +244,6 @@ def my_academics(request):
 
     record = PriorAcademics.objects.filter(student=user).first()
 
-    # ---------------- READ ----------------
     if request.method == "GET":
         if not record:
             # No row yet. Return an empty shape rather than a 404 so the form
@@ -311,25 +288,17 @@ def academics_verification_list(request):
     """
     Students the caller may verify, with whatever each has entered.
 
-    Students are scoped through scope_students_for() -- the same function
-    every other coordinator screen uses -- so a coordinator sees only their
-    own department and the officer sees everyone.
+    Scoped through scope_students_for() -- the same function every other
+    coordinator screen uses -- so a coordinator sees only their own
+    department and the officer sees everyone.
 
     Students with NO record are included, marked has_record=False. Leaving
     them out would hide exactly the students who need chasing.
-
-    Optional filters:
-        ?status=pending    entered something, not yet verified
-        ?status=verified   verified
-        ?status=missing    no record at all
     """
     user = request.user
 
     if not can_view_placement_staff(user):
-        return Response(
-            {"detail": "Not allowed."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
+        return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
 
     students = scope_students_for(
         user,
@@ -395,7 +364,7 @@ def verify_academics(request, student_id):
     """
     Mark one student's record verified, or send it back.
 
-    Body: {"verified": true}  or  {"verified": false}
+    Body: {"verified": true} or {"verified": false}
 
     The student is re-checked through scope_students_for() rather than
     trusted from the URL -- otherwise a coordinator could verify any student
@@ -404,10 +373,7 @@ def verify_academics(request, student_id):
     user = request.user
 
     if not can_view_placement_staff(user):
-        return Response(
-            {"detail": "Not allowed."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
+        return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
 
     allowed = scope_students_for(user, User.objects.filter(role="student"))
 
@@ -430,7 +396,6 @@ def verify_academics(request, student_id):
     verified = request.data.get("verified", True)
 
     if verified:
-        # nothing verifiable without a 10th mark and the qualifying mark
         if record.tenth_percent is None or record.qualifying_percent is None:
             return Response(
                 {"detail": "Record is incomplete -- ask the student to finish it first."},
@@ -449,6 +414,7 @@ def verify_academics(request, student_id):
 
     return Response(StudentAcademicsSerializer(record).data)
 
+
 # ===================== COMPANY LIST / CREATE =====================
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
@@ -457,25 +423,15 @@ def company_list(request):
     GET  -> list companies
     POST -> add a company
 
-    Coordinators can READ the list (they need to know who is visiting their
-    department) but only the officer can add or change one. Companies are
-    college-wide, so there is no department scoping here.
-
-    Filters:
-        ?active=true / false
-        ?category=product|service|core|startup|other
-        ?q=<text>     matches name
+    Coordinators can READ the list but only the officer can add or change one.
+    Companies are college-wide, so there is no department scoping here.
     """
     user = request.user
 
-    # ---------------- LIST ----------------
     if request.method == "GET":
 
         if not can_view_placement_staff(user):
-            return Response(
-                {"detail": "Not allowed."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+            return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
 
         queryset = Company.objects.select_related("created_by")
 
@@ -495,7 +451,6 @@ def company_list(request):
 
         return Response(CompanySerializer(queryset, many=True).data)
 
-    # ---------------- CREATE ----------------
     if not can_manage_placement(user):
         return Response(
             {"detail": "Only the placement officer can add companies."},
@@ -507,7 +462,6 @@ def company_list(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     serializer.save(created_by=user)
-
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -520,46 +474,33 @@ def company_detail(request, pk):
     PATCH  -> edit it
     DELETE -> deactivate, NOT remove
 
-    Delete is soft on purpose. Once drives, applications and offers reference
-    a company, removing the row would orphan a student's placement record --
-    the one piece of data they will still care about years later.
+    Soft delete: once drives, applications and offers reference a company,
+    removing the row would orphan a student's placement record -- the one
+    piece of data they will still care about years later.
     """
     user = request.user
 
     if not can_view_placement_staff(user):
-        return Response(
-            {"detail": "Not allowed."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
+        return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
 
     company = Company.objects.filter(pk=pk).select_related("created_by").first()
     if not company:
-        return Response(
-            {"detail": "Company not found."},
-            status=status.HTTP_404_NOT_FOUND,
-        )
+        return Response({"detail": "Company not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    # ---------------- READ ----------------
     if request.method == "GET":
         return Response(CompanySerializer(company).data)
 
-    # anything past here changes data
     if not can_manage_placement(user):
         return Response(
             {"detail": "Only the placement officer can change companies."},
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    # ---------------- SOFT DELETE ----------------
     if request.method == "DELETE":
         company.is_active = False
         company.save(update_fields=["is_active"])
-        return Response(
-            {"detail": f"{company.name} marked inactive."},
-            status=status.HTTP_200_OK,
-        )
+        return Response({"detail": f"{company.name} marked inactive."})
 
-    # ---------------- UPDATE ----------------
     serializer = CompanySerializer(company, data=request.data, partial=True)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -580,10 +521,7 @@ def company_categories(request):
     AND every form that offers it.
     """
     if not can_view_placement_staff(request.user):
-        return Response(
-            {"detail": "Not allowed."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
+        return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
 
     return Response([
         {"value": value, "label": label}
@@ -598,11 +536,9 @@ def drive_list(request):
     GET  -> drives with their roles, for staff
     POST -> create a drive (the visit only -- roles are added after)
 
-    Coordinators read; only the officer creates. Drives are college-wide, so
-    there is no department scoping on the drive itself -- who may APPLY is
-    decided per student per ROLE by the eligibility rule.
-
-    Filters: ?status=  ?company=  ?open=true
+    Drives are college-wide, so there is no department scoping on the drive
+    itself -- who may APPLY is decided per student per ROLE by the
+    eligibility rule.
     """
     user = request.user
 
@@ -614,10 +550,7 @@ def drive_list(request):
         queryset = (
             Drive.objects
             .select_related("company", "created_by")
-            .prefetch_related(
-                "rounds",
-                "job_roles__eligibility__allowed_departments",
-            )
+            .prefetch_related("job_roles__eligibility__allowed_departments")
         )
 
         drive_status = request.query_params.get("status")
@@ -637,7 +570,6 @@ def drive_list(request):
 
         return Response(DriveSerializer(drives, many=True).data)
 
-    # ---------------- CREATE ----------------
     if not can_manage_placement(user):
         return Response(
             {"detail": "Only the placement officer can create drives."},
@@ -649,11 +581,7 @@ def drive_list(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     drive = serializer.save(created_by=user)
-
-    return Response(
-        DriveSerializer(drive).data,
-        status=status.HTTP_201_CREATED,
-    )
+    return Response(DriveSerializer(drive).data, status=status.HTTP_201_CREATED)
 
 
 # ===================== DRIVE DETAIL =====================
@@ -661,13 +589,12 @@ def drive_list(request):
 @permission_classes([IsAuthenticated])
 def drive_detail(request, pk):
     """
-    GET    -> one drive with its rounds and roles
+    GET    -> one drive with its roles
     PATCH  -> edit it
     DELETE -> cancel, NOT remove
 
-    Cancelling rather than deleting keeps applications and round results
-    pointing at a real drive. A student who sat three rounds should still be
-    able to see that they did.
+    Cancelling keeps applications and offers pointing at a real drive. A
+    student who attended should still be able to see that they did.
     """
     user = request.user
 
@@ -677,7 +604,7 @@ def drive_detail(request, pk):
     drive = (
         Drive.objects
         .select_related("company", "created_by")
-        .prefetch_related("rounds", "job_roles__eligibility__allowed_departments")
+        .prefetch_related("job_roles__eligibility__allowed_departments")
         .filter(pk=pk)
         .first()
     )
@@ -749,10 +676,7 @@ def drive_job_roles(request, pk):
     role = serializer.save()
     EligibilityRule.objects.get_or_create(job_role=role)
 
-    return Response(
-        JobRoleSerializer(role).data,
-        status=status.HTTP_201_CREATED,
-    )
+    return Response(JobRoleSerializer(role).data, status=status.HTTP_201_CREATED)
 
 
 # ===================== JOB ROLE DETAIL =====================
@@ -764,8 +688,8 @@ def job_role_detail(request, role_id):
     PATCH  -> edit it
     DELETE -> deactivate, NOT remove
 
-    Soft delete again: applications point at a role, and removing it would
-    orphan them.
+    Soft delete: applications point at a role, and removing it would orphan
+    them.
     """
     user = request.user
 
@@ -809,8 +733,8 @@ def role_eligibility(request, role_id):
     GET   -> the rule for one ROLE
     PATCH -> edit the cutoffs
 
-    allowed_departments is a M2M and must be sent as a list of ids.
-    Sending [] means every branch -- the "no limit" case, not an error.
+    allowed_departments is a M2M and must be sent as a list of ids. Sending []
+    means every branch -- the "no limit" case, not an error.
     """
     user = request.user
 
@@ -849,11 +773,6 @@ def role_matches(request, role_id):
 
     Computed live on every call -- never stored. A stored count would be wrong
     the moment a result is published, a mark is verified, or a cutoff changes.
-
-    Coordinators see only their own department's students; the officer sees
-    the college. Same scope_students_for() every other screen uses.
-
-    ?detail=true returns the per-student breakdown as well as the count.
     """
     user = request.user
 
@@ -924,94 +843,6 @@ def role_matches(request, role_id):
 
     return Response(payload)
 
-
-# ===================== DRIVE ROUNDS =====================
-@api_view(["GET", "POST"])
-@permission_classes([IsAuthenticated])
-def drive_rounds(request, pk):
-    """
-    GET  -> the round sequence for a drive
-    POST -> add a round
-
-    Rounds belong to the DRIVE, not a role -- every candidate goes through the
-    same sequence whichever role they applied for.
-
-    `order` is assigned server-side as the next number, never taken from the
-    client: a client-supplied order collides with the unique constraint the
-    moment two people add a round at once.
-    """
-    user = request.user
-
-    if not can_view_placement_staff(user):
-        return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
-
-    drive = Drive.objects.filter(pk=pk).first()
-    if not drive:
-        return Response({"detail": "Drive not found."}, status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == "GET":
-        return Response(DriveRoundSerializer(drive.rounds.all(), many=True).data)
-
-    if not can_manage_placement(user):
-        return Response(
-            {"detail": "Only the placement officer can add rounds."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
-
-    last = drive.rounds.order_by("-order").first()
-    next_order = (last.order + 1) if last else 1
-
-    data = dict(request.data)
-    data["drive"] = drive.id
-    data["order"] = next_order
-
-    serializer = DriveRoundSerializer(data=data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    serializer.save()
-    return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-# ===================== DRIVE ROUND DETAIL =====================
-@api_view(["PATCH", "DELETE"])
-@permission_classes([IsAuthenticated])
-def drive_round_detail(request, round_id):
-    """
-    PATCH  -> rename a round or set its date
-    DELETE -> remove it, then renumber the rest
-
-    Renumbering matters: deleting round 2 of four would otherwise leave
-    1, 3, 4, and the gap looks like a missing round on every screen.
-    """
-    user = request.user
-
-    if not can_manage_placement(user):
-        return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
-
-    round_obj = DriveRound.objects.filter(pk=round_id).select_related("drive").first()
-    if not round_obj:
-        return Response({"detail": "Round not found."}, status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == "DELETE":
-        drive = round_obj.drive
-        round_obj.delete()
-
-        for index, r in enumerate(drive.rounds.order_by("order"), start=1):
-            if r.order != index:
-                r.order = index
-                r.save(update_fields=["order"])
-
-        return Response({"detail": "Round removed."})
-
-    serializer = DriveRoundSerializer(round_obj, data=request.data, partial=True)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    serializer.save()
-    return Response(serializer.data)
-
-
 # ===================== MY DRIVES (STUDENT) =====================
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -1023,8 +854,7 @@ def my_drives(request):
     drive and not another. The drive is listed once with its roles beneath.
 
     Ineligible roles are still shown, with reasons. Hiding them would leave a
-    student wondering why a friend can apply and they cannot, and the reasons
-    are exactly what tells them whether it is worth fixing.
+    student wondering why a friend can apply and they cannot.
 
     Academic standing is fetched ONCE and reused across every role rather than
     recomputing CGPA per role.
@@ -1041,14 +871,19 @@ def my_drives(request):
         Drive.objects
         .filter(status__in=["published", "closed"])
         .select_related("company")
-        .prefetch_related(
-            "rounds",
-            "job_roles__eligibility__allowed_departments",
-        )
+        .prefetch_related("job_roles__eligibility__allowed_departments")
         .order_by("-created_at")
     )
 
     standing = get_academic_standing(user)
+
+    # This student's existing decisions, fetched once and attached per role.
+    # Without it the page cannot tell "not applied" from "already applied",
+    # and would offer Apply on a role they already applied for.
+    decisions = {
+        a.job_role_id: a
+        for a in Application.objects.filter(student=user)
+    }
 
     rows = []
     eligible_roles = 0
@@ -1068,6 +903,19 @@ def my_drives(request):
             role_row["blockers"] = result["blockers"]
             role_row["checks"] = result["checks"]
             role_row["is_open"] = role.is_open
+
+            decision = decisions.get(role.id)
+            role_row["application"] = (
+                {
+                    "id": decision.id,
+                    "status": decision.status,
+                    "opt_out_reason": decision.opt_out_reason,
+                    "applied_at": decision.applied_at,
+                }
+                if decision
+                else None
+            )
+
             roles.append(role_row)
 
             if result["eligible"]:
@@ -1086,4 +934,978 @@ def my_drives(request):
         "standing": standing,
         "eligible_count": eligible_roles,
         "results": rows,
+    })
+
+
+# ===================== APPLY / OPT OUT (STUDENT) =====================
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def apply_to_role(request, role_id):
+    """
+    A student's decision about one role.
+
+    Body:
+        {"status": "applied"}
+        {"status": "opted_out", "opt_out_reason": "..."}
+        {"status": "withdrawn"}
+
+    ELIGIBILITY IS RE-CHECKED HERE, not trusted from the page. The Apply
+    button appearing is not permission: the page may have loaded an hour ago,
+    and a result published since could have changed the answer.
+
+    The deadline is enforced here too. Hiding the button in the UI is not
+    enforcement -- anyone can post to this endpoint directly.
+    """
+    user = request.user
+
+    if not is_placement_student(user):
+        return Response(
+            {"detail": "Only students can apply."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    role = (
+        JobRole.objects
+        .select_related("drive__company")
+        .prefetch_related("eligibility__allowed_departments")
+        .filter(pk=role_id)
+        .first()
+    )
+    if not role:
+        return Response({"detail": "Role not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    new_status = request.data.get("status", "applied")
+
+    if new_status not in ("applied", "opted_out", "withdrawn"):
+        return Response({"detail": "Unknown status."}, status=status.HTTP_400_BAD_REQUEST)
+
+    existing = Application.objects.filter(student=user, job_role=role).first()
+
+    # ---------------- APPLYING ----------------
+    if new_status == "applied":
+
+        if not role.is_open:
+            return Response(
+                {"detail": "Applications for this role are closed."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        result = check_eligibility(user, role)
+        if not result["eligible"]:
+            return Response(
+                {
+                    "detail": "You are not eligible for this role.",
+                    "blockers": result["blockers"],
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if existing:
+            existing.status = "applied"
+            existing.opt_out_reason = ""
+            # snapshot refreshed: this is a NEW decision, so it records what
+            # was true today, not when they first opted out
+            existing.eligibility_snapshot = result
+            existing.save()
+            return Response(ApplicationSerializer(existing).data)
+
+        application = Application.objects.create(
+            student=user,
+            job_role=role,
+            status="applied",
+            eligibility_snapshot=result,
+        )
+        return Response(
+            ApplicationSerializer(application).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    # ---------------- WITHDRAWING ----------------
+    if new_status == "withdrawn":
+
+        if not existing:
+            return Response(
+                {"detail": "You have not applied for this role."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Allowed only while the role is still open. After the deadline the
+        # company has the applicant list, and a student vanishing from it is a
+        # conversation, not a button.
+        if not role.is_open:
+            return Response(
+                {"detail": "The deadline has passed -- speak to your coordinator."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        existing.status = "withdrawn"
+        existing.save(update_fields=["status", "updated_at"])
+        return Response(ApplicationSerializer(existing).data)
+
+    # ---------------- OPTING OUT ----------------
+    # No eligibility check: a student may decline a role they could not have
+    # had anyway, and refusing to record that would leave them in the
+    # "no response" list forever.
+    reason = (request.data.get("opt_out_reason") or "").strip()
+
+    if not reason:
+        return Response(
+            {"opt_out_reason": ["Please say why you are not interested."]},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if existing:
+        existing.status = "opted_out"
+        existing.opt_out_reason = reason
+        existing.save(update_fields=["status", "opt_out_reason", "updated_at"])
+        return Response(ApplicationSerializer(existing).data)
+
+    application = Application.objects.create(
+        student=user,
+        job_role=role,
+        status="opted_out",
+        opt_out_reason=reason,
+    )
+    return Response(
+        ApplicationSerializer(application).data,
+        status=status.HTTP_201_CREATED,
+    )
+
+
+# ===================== MY APPLICATIONS (STUDENT) =====================
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_applications(request):
+    """
+    Everything this student has decided on.
+
+    Read from request.user, never an id in the path, so one student cannot
+    read another's applications.
+    """
+    user = request.user
+
+    if not is_placement_student(user):
+        return Response(
+            {"detail": "Only students have applications."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    applications = (
+        Application.objects
+        .filter(student=user)
+        .select_related("job_role__drive__company")
+    )
+
+    return Response({
+        "applied": ApplicationSerializer(
+            applications.filter(status="applied"), many=True
+        ).data,
+        "opted_out": ApplicationSerializer(
+            applications.filter(status="opted_out"), many=True
+        ).data,
+        "withdrawn": ApplicationSerializer(
+            applications.filter(status="withdrawn"), many=True
+        ).data,
+    })
+
+
+# ===================== APPLICATIONS FOR A ROLE (STAFF) =====================
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def role_applications(request, role_id):
+    """
+    Who applied, who declined, and who has not answered -- for one role.
+
+    THE THIRD GROUP IS COMPUTED, NOT STORED. "No response" is every eligible
+    student without an application row. Storing a row per non-response would
+    mean creating thousands of rows nobody asked for, each needing an update
+    whenever eligibility changed.
+    """
+    user = request.user
+
+    if not can_view_placement_staff(user):
+        return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
+
+    role = (
+        JobRole.objects
+        .select_related("drive__company")
+        .prefetch_related("eligibility__allowed_departments")
+        .filter(pk=role_id)
+        .first()
+    )
+    if not role:
+        return Response({"detail": "Role not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    students = scope_students_for(
+        user,
+        User.objects.filter(role="student"),
+    ).select_related("department", "prior_academics", "course")
+
+    applications = (
+        Application.objects
+        .filter(job_role=role, student__in=students)
+        .select_related("student__department", "job_role__drive__company")
+    )
+
+    decided = {a.student_id: a for a in applications}
+
+    no_response = []
+    for student in students:
+        if student.id in decided:
+            continue
+        if check_eligibility(student, role)["eligible"]:
+            no_response.append({
+                "student": student.id,
+                "student_name": student.username,
+                "roll_number": student.roll_number,
+                "department_name": (
+                    student.department.name if student.department else None
+                ),
+            })
+
+    applied = applications.filter(status="applied")
+    opted_out = applications.filter(status="opted_out")
+    withdrawn = applications.filter(status="withdrawn")
+
+    return Response({
+        "job_role": role.id,
+        "role_title": role.title,
+        "company_name": role.drive.company.name,
+        "counts": {
+            "applied": applied.count(),
+            "opted_out": opted_out.count(),
+            "withdrawn": withdrawn.count(),
+            "no_response": len(no_response),
+        },
+        "applied": StaffApplicationSerializer(applied, many=True).data,
+        "opted_out": StaffApplicationSerializer(opted_out, many=True).data,
+        "withdrawn": StaffApplicationSerializer(withdrawn, many=True).data,
+        "no_response": no_response,
+    })
+
+
+# ===================== DRIVE ATTENDANCE =====================
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def drive_attendance(request, role_id):
+    """
+    GET  -> everyone who applied for this role, with their attendance
+    POST -> mark one student present or absent
+
+    Marking PRESENT creates an approved OD and writes duty_leave attendance,
+    through placement/services.py -> attendance/services.py. The placement
+    cell sent the student, so there is nothing for a tutor or HOD to approve.
+
+    Only students who APPLIED appear. Someone who opted out or withdrew is not
+    expected on the day.
+    """
+    user = request.user
+
+    if not can_view_placement_staff(user):
+        return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
+
+    role = JobRole.objects.select_related("drive__company").filter(pk=role_id).first()
+    if not role:
+        return Response({"detail": "Role not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    students = scope_students_for(user, User.objects.filter(role="student"))
+
+    applications = (
+        Application.objects
+        .filter(job_role=role, status="applied", student__in=students)
+        .select_related("student__department", "drive_attendance")
+        .order_by("student__roll_number")
+    )
+
+    if request.method == "GET":
+
+        rows = []
+        present = absent = unmarked = 0
+
+        for app in applications:
+            record = getattr(app, "drive_attendance", None)
+
+            if record is None:
+                unmarked += 1
+                rows.append({
+                    "id": None,
+                    "application": app.id,
+                    "student_name": app.student.username,
+                    "roll_number": app.student.roll_number,
+                    "department_name": (
+                        app.student.department.name if app.student.department else None
+                    ),
+                    "status": None,
+                    "status_display": "Not marked",
+                    "remarks": "",
+                    "od_created": False,
+                })
+            else:
+                if record.status == "present":
+                    present += 1
+                else:
+                    absent += 1
+                rows.append(DriveAttendanceSerializer(record).data)
+
+        return Response({
+            "job_role": role.id,
+            "role_title": role.title,
+            "company_name": role.drive.company.name,
+            "drive_date": role.drive.drive_date,
+            # Without a date no OD can be created, and the screen should say
+            # so before the coordinator marks thirty students.
+            "can_create_od": bool(role.drive.drive_date),
+            "counts": {
+                "applied": applications.count(),
+                "present": present,
+                "absent": absent,
+                "unmarked": unmarked,
+            },
+            "results": rows,
+        })
+
+    # ---------------- MARK ----------------
+    application_id = request.data.get("application")
+    new_status = request.data.get("status", "present")
+    remarks = request.data.get("remarks", "")
+
+    if new_status not in ("present", "absent"):
+        return Response(
+            {"detail": "status must be present or absent."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # re-checked against the caller's scope rather than trusted from the body,
+    # so a coordinator cannot mark a student in another department
+    application = applications.filter(pk=application_id).first()
+    if not application:
+        return Response(
+            {"detail": "Application not found, or not one you can mark."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    record, _ = DriveAttendance.objects.get_or_create(
+        application=application,
+        defaults={"status": new_status},
+    )
+
+    was_present = record.status == "present" and record.od_request_id
+
+    record.status = new_status
+    record.remarks = remarks
+    record.marked_by = user
+    record.marked_at = timezone.now()
+
+    note = ""
+
+    if new_status == "present":
+        od, note = create_drive_od(application, marked_by=user)
+        record.od_request = od
+    elif was_present:
+        _od, note = cancel_drive_od(application)
+        # the OD row is kept, cancelled, so the history stays readable
+    record.save()
+
+    data = DriveAttendanceSerializer(record).data
+    data["note"] = note
+    return Response(data)
+
+
+# ===================== OFFERS (STAFF) =====================
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def role_offers(request, role_id):
+    """
+    GET  -> offers made for this role, and who attended but has none
+    POST -> record an offer
+
+    The officer RECORDS an offer; the STUDENT accepts or declines it. This
+    endpoint never sets status past 'offered' -- that decision is theirs and
+    goes through their own endpoint.
+
+    package_lpa defaults to the role's advertised package but is STORED on the
+    offer. The role's figure can be edited later, and an offer must record
+    what was actually offered.
+    """
+    user = request.user
+
+    if not can_view_placement_staff(user):
+        return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
+
+    role = JobRole.objects.select_related("drive__company").filter(pk=role_id).first()
+    if not role:
+        return Response({"detail": "Role not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    students = scope_students_for(user, User.objects.filter(role="student"))
+
+    applications = (
+        Application.objects
+        .filter(job_role=role, status="applied", student__in=students)
+        .select_related("student__department", "offer")
+        .order_by("student__roll_number")
+    )
+
+    if request.method == "GET":
+
+        rows = []
+        no_offer = []
+        counts = {"offered": 0, "accepted": 0, "declined": 0}
+
+        for app in applications:
+            offer = getattr(app, "offer", None)
+
+            if offer is None:
+                no_offer.append({
+                    "application": app.id,
+                    "student_name": app.student.username,
+                    "roll_number": app.student.roll_number,
+                    "department_name": (
+                        app.student.department.name if app.student.department else None
+                    ),
+                })
+            else:
+                counts[offer.status] = counts.get(offer.status, 0) + 1
+                rows.append(OfferSerializer(offer).data)
+
+        return Response({
+            "job_role": role.id,
+            "role_title": role.title,
+            "company_name": role.drive.company.name,
+            "role_package": role.package_lpa,
+            "counts": {
+                **counts,
+                "no_offer": len(no_offer),
+                "applied": applications.count(),
+            },
+            "results": rows,
+            "no_offer": no_offer,
+        })
+
+    # ---------------- RECORD ----------------
+    if not can_manage_placement(user):
+        return Response(
+            {"detail": "Only the placement officer can record offers."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    application_id = request.data.get("application")
+
+    application = applications.filter(pk=application_id).first()
+    if not application:
+        return Response(
+            {"detail": "Application not found, or not one you can record against."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    package = request.data.get("package_lpa")
+    if package in ("", None):
+        package = role.package_lpa
+
+    offer, created = Offer.objects.get_or_create(
+        application=application,
+        defaults={
+            "package_lpa": package,
+            "joining_date": request.data.get("joining_date") or None,
+            "remarks": request.data.get("remarks", ""),
+            "recorded_by": user,
+        },
+    )
+
+    if not created:
+        offer.package_lpa = package
+        offer.joining_date = request.data.get("joining_date") or offer.joining_date
+        offer.remarks = request.data.get("remarks", offer.remarks)
+        offer.recorded_by = user
+
+    # A file only arrives on multipart requests, so it is set separately --
+    # a plain JSON edit of the package must not wipe an uploaded letter.
+    if "offer_letter" in request.FILES:
+        offer.offer_letter = request.FILES["offer_letter"]
+
+    offer.save()
+
+    return Response(
+        OfferSerializer(offer).data,
+        status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+    )
+
+
+# ===================== OFFER DETAIL (STAFF) =====================
+@api_view(["PATCH", "DELETE"])
+@permission_classes([IsAuthenticated])
+def offer_detail(request, offer_id):
+    """
+    PATCH  -> correct an offer's package, joining date, letter or remarks
+    DELETE -> remove it
+
+    Delete is REAL here, unlike everywhere else in this module: an offer
+    recorded against the wrong student is a mistake, not history, and leaving
+    it as a cancelled row would still count them as placed in the reports.
+    """
+    user = request.user
+
+    if not can_manage_placement(user):
+        return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
+
+    offer = (
+        Offer.objects
+        .select_related("application__student", "application__job_role__drive__company")
+        .filter(pk=offer_id)
+        .first()
+    )
+    if not offer:
+        return Response({"detail": "Offer not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == "DELETE":
+        offer.delete()
+        return Response({"detail": "Offer removed."})
+
+    serializer = OfferSerializer(offer, data=request.data, partial=True)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    serializer.save(recorded_by=user)
+
+    if "offer_letter" in request.FILES:
+        offer.offer_letter = request.FILES["offer_letter"]
+        offer.save(update_fields=["offer_letter"])
+
+    return Response(OfferSerializer(offer).data)
+
+
+# ===================== MY OFFERS (STUDENT) =====================
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_offers(request):
+    """
+    A student's own offers.
+
+    A student may hold several at once and choose between them, so they are
+    returned as ONE list rather than split by status -- the decision is a
+    comparison, and separating them into tabs would hide the comparison.
+    """
+    user = request.user
+
+    if not is_placement_student(user):
+        return Response(
+            {"detail": "Only students have offers."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    offers = (
+        Offer.objects
+        .filter(application__student=user)
+        .select_related("application__job_role__drive__company")
+    )
+
+    return Response({
+        "count": offers.count(),
+        "accepted": offers.filter(status="accepted").count(),
+        "results": StudentOfferSerializer(offers, many=True).data,
+    })
+
+
+# ===================== ACCEPT / DECLINE (STUDENT) =====================
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def decide_offer(request, offer_id):
+    """
+    A student accepts or declines one of their own offers.
+
+    Body: {"status": "accepted"} or {"status": "declined"}
+
+    NOTHING is auto-declined. A student may accept two offers while deciding,
+    and the system records what they did rather than enforcing a choice the
+    college has not asked for. Reports count STUDENTS with an accepted offer,
+    not offer rows, so a second acceptance cannot inflate the placed figure.
+
+    Whether an accepted offer stops them applying elsewhere is decided by
+    EligibilityRule.placed_package_cap at apply time -- not here.
+    """
+    user = request.user
+
+    if not is_placement_student(user):
+        return Response(
+            {"detail": "Only students can answer an offer."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    # filtered by student, so one student cannot answer another's offer
+    offer = (
+        Offer.objects
+        .filter(pk=offer_id, application__student=user)
+        .select_related("application__job_role__drive__company")
+        .first()
+    )
+    if not offer:
+        return Response({"detail": "Offer not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    new_status = request.data.get("status")
+
+    if new_status not in ("accepted", "declined"):
+        return Response(
+            {"detail": "status must be accepted or declined."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    offer.status = new_status
+    offer.decided_at = timezone.now()
+    offer.save(update_fields=["status", "decided_at"])
+
+    return Response(StudentOfferSerializer(offer).data)
+
+# ===================== PLACEMENT REPORT =====================
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def placement_report(request):
+    """
+    Placement figures for ONE graduating batch.
+
+    ?year=2030   the passing year to report on
+    ?year        omitted -> the most recent batch
+
+    THE NUMBER THAT MATTERS: "placed" counts STUDENTS WITH AT LEAST ONE
+    ACCEPTED OFFER -- never offer rows. Forty students holding sixty offers
+    between them is FORTY placed. Counting rows would publish sixty, and this
+    is the figure that goes into a NAAC submission.
+
+    Passing year is DERIVED (batch_year + course duration), not stored, so it
+    cannot be filtered in SQL -- each student is checked in Python. Slower,
+    but there is one definition of passing year rather than a stored column
+    that drifts from the calculation.
+    """
+    user = request.user
+
+    if not can_view_placement_staff(user):
+        return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
+
+    from exams.services import get_passing_year
+
+    students = (
+        scope_students_for(user, User.objects.filter(role="student"))
+        .select_related("department", "course")
+    )
+
+    # ---------------- WHICH YEARS EXIST ----------------
+    by_year = {}
+    for student in students:
+        year = get_passing_year(student)
+        if year:
+            by_year.setdefault(year, []).append(student)
+
+    available_years = sorted(by_year.keys())
+
+    if not available_years:
+        return Response({
+            "years": [],
+            "year": None,
+            "detail": (
+                "No student has a passing year yet — batch year or course "
+                "duration is missing."
+            ),
+        })
+
+    # ---------------- PICK THE YEAR ----------------
+    wanted = request.query_params.get("year")
+    if wanted:
+        try:
+            year = int(wanted)
+        except ValueError:
+            year = available_years[-1]
+    else:
+        # The most recent batch, not the earliest. Opening on a graduated year
+        # shows an empty report and makes the page look broken when the
+        # current batch has all the data.
+        year = available_years[-1]
+
+    batch = by_year.get(year, [])
+    batch_ids = [s.id for s in batch]
+
+    # ---------------- ACCEPTED OFFERS ----------------
+    accepted = (
+        Offer.objects
+        .filter(application__student_id__in=batch_ids, status="accepted")
+        .select_related(
+            "application__student__department",
+            "application__job_role__drive__company",
+        )
+    )
+
+    # student id -> their best accepted package. A student with two accepted
+    # offers counts ONCE, and the package reported is the higher one.
+    best_package = {}
+    for offer in accepted:
+        sid = offer.application.student_id
+        pkg = offer.package_lpa
+        if pkg is None:
+            continue
+        if sid not in best_package or pkg > best_package[sid]:
+            best_package[sid] = pkg
+
+    placed_ids = set(accepted.values_list("application__student_id", flat=True))
+
+    total = len(batch)
+    placed = len(placed_ids)
+
+    packages = list(best_package.values())
+
+    # ---------------- BY DEPARTMENT ----------------
+    departments = {}
+    for student in batch:
+        name = student.department.name if student.department else "No department"
+        row = departments.setdefault(name, {"students": 0, "placed": 0})
+        row["students"] += 1
+        if student.id in placed_ids:
+            row["placed"] += 1
+
+    department_rows = [
+        {
+            "department": name,
+            "students": row["students"],
+            "placed": row["placed"],
+            "percent": round(row["placed"] / row["students"] * 100, 1)
+            if row["students"]
+            else 0,
+        }
+        for name, row in sorted(departments.items())
+    ]
+
+    # ---------------- BY COMPANY CATEGORY ----------------
+    # Counts OFFERS here, not students, and the key says so. A student with a
+    # product and a service offer is one placed student but two rows in this
+    # split -- mixing the two meanings is how these reports go wrong.
+    categories = {}
+    for offer in accepted:
+        company = offer.application.job_role.drive.company
+        label = company.get_category_display()
+        categories[label] = categories.get(label, 0) + 1
+
+    # ---------------- BY COMPANY ----------------
+    companies = {}
+    for offer in accepted:
+        name = offer.application.job_role.drive.company.name
+        companies[name] = companies.get(name, 0) + 1
+
+    company_rows = [
+        {"company": name, "offers": count}
+        for name, count in sorted(companies.items(), key=lambda x: -x[1])
+    ]
+
+    # ---------------- ACTIVITY ----------------
+    applied_ids = set(
+        Application.objects
+        .filter(student_id__in=batch_ids, status="applied")
+        .values_list("student_id", flat=True)
+    )
+
+    return Response({
+        "years": available_years,
+        "year": year,
+
+        "summary": {
+            "students": total,
+            "applied": len(applied_ids),
+            "placed": placed,
+            "not_placed": total - placed,
+            "percent": round(placed / total * 100, 1) if total else 0,
+            # Offers can exceed placed students -- that is the point of
+            # reporting both.
+            "accepted_offers": accepted.count(),
+        },
+
+        "package": {
+            "highest": max(packages) if packages else None,
+            "lowest": min(packages) if packages else None,
+            "average": round(sum(packages) / len(packages), 2) if packages else None,
+            "counted": len(packages),
+        },
+
+        "departments": department_rows,
+        "categories": [
+            {"category": k, "offers": v}
+            for k, v in sorted(categories.items(), key=lambda x: -x[1])
+        ],
+        "companies": company_rows,
+    })
+
+# ===================== DASHBOARD =====================
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def placement_dashboard(request):
+    """
+    What the placement officer lands on: what is open, and what needs
+    attention.
+
+    The "attention" items are the point of this endpoint. Each is a silent
+    problem -- nothing errors, nothing looks broken, the drive simply does
+    nothing:
+
+      * a PUBLISHED drive with no roles -- students see a card with nothing
+        to apply for
+      * a role nobody is eligible for -- the cutoffs are too tight, and the
+        officer finds out when the applicant list stays empty
+      * a role closing within 3 days with no applicants
+      * students whose marks are unverified, who cannot apply for anything
+
+    None of these are visible from any other screen, which is why they are
+    computed here rather than assembled from existing endpoints.
+    """
+    user = request.user
+
+    if not can_view_placement_staff(user):
+        return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
+
+    from datetime import timedelta
+
+    students = scope_students_for(user, User.objects.filter(role="student"))
+    student_ids = list(students.values_list("id", flat=True))
+
+    now = timezone.now()
+    soon = now + timedelta(days=3)
+
+    # ---------------- DRIVES ----------------
+    drives = (
+        Drive.objects
+        .select_related("company")
+        .prefetch_related("job_roles__eligibility__allowed_departments")
+    )
+
+    open_drives = []
+    attention = []
+
+    for drive in drives:
+
+        if drive.status == "cancelled":
+            continue
+
+        roles = [r for r in drive.job_roles.all() if r.is_active]
+
+        # published with nothing to apply for
+        if drive.status == "published" and not roles:
+            attention.append({
+                "kind": "no_roles",
+                "drive": drive.id,
+                "message": (
+                    f"{drive.company.name} is published but has no roles — "
+                    f"students see it with nothing to apply for."
+                ),
+            })
+
+        if not drive.is_open:
+            continue
+
+        for role in roles:
+
+            applied = Application.objects.filter(
+                job_role=role, status="applied", student_id__in=student_ids
+            ).count()
+
+            # A role nobody qualifies for is the expensive mistake: the drive
+            # runs, the applicant list stays empty, and nobody finds out until
+            # the day. Computed live -- the same check the student sees.
+            eligible = sum(
+                1 for s in students if check_eligibility(s, role)["eligible"]
+            )
+
+            open_drives.append({
+                "drive": drive.id,
+                "company_name": drive.company.name,
+                "drive_title": drive.title,
+                "role": role.id,
+                "role_title": role.title,
+                "package_lpa": role.package_lpa,
+                "application_deadline": drive.application_deadline,
+                "drive_date": drive.drive_date,
+                "eligible": eligible,
+                "applied": applied,
+            })
+
+            if eligible == 0:
+                attention.append({
+                    "kind": "nobody_eligible",
+                    "drive": drive.id,
+                    "role": role.id,
+                    "message": (
+                        f"Nobody is eligible for {role.title} at "
+                        f"{drive.company.name} — the cutoffs may be too tight."
+                    ),
+                })
+
+            elif (
+                applied == 0
+                and drive.application_deadline
+                and drive.application_deadline <= soon
+            ):
+                attention.append({
+                    "kind": "closing_empty",
+                    "drive": drive.id,
+                    "role": role.id,
+                    "message": (
+                        f"{role.title} at {drive.company.name} closes soon "
+                        f"and nobody has applied."
+                    ),
+                })
+
+    # ---------------- VERIFICATION ----------------
+    # A student with unverified marks is ineligible for everything, and
+    # nothing else on any screen says so out loud.
+    verified = set(
+        PriorAcademics.objects
+        .filter(student_id__in=student_ids, verified=True)
+        .values_list("student_id", flat=True)
+    )
+    unverified = len(student_ids) - len(verified)
+
+    if unverified:
+        attention.append({
+            "kind": "unverified",
+            "message": (
+                f"{unverified} student{'' if unverified == 1 else 's'} "
+                f"{'has' if unverified == 1 else 'have'} unverified academic "
+                f"details and cannot apply for anything."
+            ),
+        })
+
+    # ---------------- RECENT OFFERS ----------------
+    recent_offers = (
+        Offer.objects
+        .filter(application__student_id__in=student_ids)
+        .select_related(
+            "application__student",
+            "application__job_role__drive__company",
+        )
+        .order_by("-created_at")[:8]
+    )
+
+    offers = [
+        {
+            "id": o.id,
+            "student_name": o.application.student.username,
+            "roll_number": o.application.student.roll_number,
+            "company_name": o.application.job_role.drive.company.name,
+            "role_title": o.application.job_role.title,
+            "package_lpa": o.package_lpa,
+            "status": o.status,
+            "status_display": o.get_status_display(),
+        }
+        for o in recent_offers
+    ]
+
+    waiting = sum(1 for o in offers if o["status"] == "offered")
+
+    return Response({
+        "counts": {
+            "students": len(student_ids),
+            "unverified": unverified,
+            "open_roles": len(open_drives),
+            "companies": Company.objects.filter(is_active=True).count(),
+            "drives": drives.exclude(status="cancelled").count(),
+            "offers_waiting": waiting,
+        },
+        "open_drives": sorted(
+            open_drives,
+            key=lambda d: (d["application_deadline"] is None, d["application_deadline"]),
+        ),
+        "attention": attention,
+        "recent_offers": offers,
     })

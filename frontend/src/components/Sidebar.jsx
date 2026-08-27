@@ -110,12 +110,11 @@ export default function Sidebar({ open, setOpen }) {
   else if (user.role === "admin" && subRole === "placement_officer") {
     menu = [
       { name: "Dashboard", path: "/placement" },
-      { name: "Students", path: "/placement/students" },
       { name: "Coordinators", path: "/placement/coordinators" },
       { name: "Companies", path: "/placement/companies" },
       { name: "Drives", path: "/placement/drives" },
       { name: "Applications", path: "/placement/applications" },
-      { name: "Interviews", path: "/placement/interviews" },
+      { name: "Drive attendance", path: "/placement/interviews" },
       { name: "Offers", path: "/placement/offers" },
       { name: "Reports", path: "/placement/reports" },
       { name: "Announcements", path: "/announcements" },
@@ -215,8 +214,8 @@ export default function Sidebar({ open, setOpen }) {
     }
 
     // ================= PLACEMENT =================
-    // Placement paths nest several levels deep (/placement/drives/:id/rounds),
-    // so an exact match alone would drop the highlight on every detail page.
+    // Placement paths can nest (/placement/drives, /placement/offers), so an
+    // exact match alone would drop the highlight on a detail page.
     if (location.pathname.startsWith("/student/placement")) {
       if (itemPath === "/student/placement") {
         return true;

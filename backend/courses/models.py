@@ -771,7 +771,6 @@ def delete_studymaterial_file(sender, instance, **kwargs):
     if instance.file:
         instance.file.delete(save=False)
 
-#_________________________________________#
 
 # ===================== FEE =====================
 class Fee(models.Model):
@@ -799,7 +798,67 @@ class Fee(models.Model):
     def __str__(self):
         return f"{self.student.username} – {self.term}"
     
+# ===================== FEE PAYMENT =====================
+class FeePayment(models.Model):
+    """
+    ONE payment toward a fee. Several payments can exist for one fee.
 
+    Fee.paid_amount used to be a running total: each payment did
+    `fee.paid_amount += amount` and overwrote the previous figure. A student
+    who paid 2000 then 3000 showed 5000, with no record that two payments
+    happened, when, or for how much -- and Fee.paid_date kept only the last
+    one.
+
+    A college taking instalments has to answer "when did they pay and how
+    much". That question needs rows, not a total.
+    """
+
+    fee = models.ForeignKey(
+        Fee,
+        on_delete=models.CASCADE,
+        related_name='payments',
+    )
+
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    paid_on = models.DateField(default=timezone.now)
+
+    # The student or parent whose money it was. Not necessarily who typed it
+    # in -- a parent can pay for their child, and the office can record a
+    # counter payment on behalf of either.
+    paid_by = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='fee_payments_made',
+    )
+
+    # Receipt number or transaction id. Optional: a small cash payment at the
+    # counter often has nothing to reference, and a required field would just
+    # collect made-up values.
+    reference = models.CharField(max_length=100, blank=True)
+
+    remarks = models.CharField(max_length=255, blank=True)
+
+    # Who entered it. Separate from paid_by so a counter payment is traceable
+    # to the staff member who took the money.
+    recorded_by = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='fee_payments_recorded',
+    )
+
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-paid_on', '-recorded_at']
+
+    def __str__(self):
+        return f"{self.fee.student.username} - {self.amount} on {self.paid_on}"
+    
 # ===================== PARENT MESSAGE =====================
 class ParentMessage(models.Model):
     sender = models.ForeignKey(

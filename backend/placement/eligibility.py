@@ -1,31 +1,34 @@
+
+
+from decimal import Decimal
+
 from exams.services import get_academic_standing
 
 
 def check_eligibility(student, job_role, standing=None):
-    """
-    Returns a dict:
-        {
-          'eligible': bool,
-          'checks': [ {criterion, required, actual, passed, reason}, ... ],
-          'blockers': [str, ...],       # short reasons it failed
-        }
-
-    Every criterion is evaluated even after one fails. Stopping at the first
-    failure would tell a student "CGPA too low" today and "arrears" tomorrow,
-    one at a time -- they need the whole picture to know whether it is worth
-    fixing.
-
-    `standing` can be passed in when checking many students or many roles at
-    once, so get_academic_standing() is not recomputed every time.
-    """
+  
     checks = []
     blockers = []
+
+    def jsonable(value):
+        """
+        Decimal -> float, so the result can be stored in a JSONField.
+
+        Percentages and CGPA are Decimals by design (float drift would break a
+        `>= 60` comparison), but JSON has no Decimal type. Converting HERE
+        rather than at each call site means every caller that saves a snapshot
+        gets a storable dict -- Application.eligibility_snapshot failed on
+        exactly this.
+        """
+        if isinstance(value, Decimal):
+            return float(value)
+        return value
 
     def record(criterion, required, actual, passed, reason=""):
         checks.append({
             "criterion": criterion,
-            "required": required,
-            "actual": actual,
+            "required": jsonable(required),
+            "actual": jsonable(actual),
             "passed": passed,
             "reason": reason,
         })
@@ -201,6 +204,51 @@ def check_eligibility(student, job_role, standing=None):
     else:
         record("Passing year", "Any", standing.get("passing_year") or "—", True)
 
+    # ---------------- ALREADY PLACED ----------------
+    # A student holding an ACCEPTED offer at or above the cap is done, and the
+    # college stops them attending further drives.
+    #
+    # Only ACCEPTED counts. An unaccepted 7 LPA offer means the student has
+    # not decided yet, and blocking them would force a choice the company has
+    # not asked for.
+    #
+    # This replaced a boolean `allow_already_placed`. The real rule is "6 LPA
+    # and above", not "placed or not" -- a student on 4 LPA is still looking,
+    # one on 7 LPA is done, and a flag cannot tell those apart.
+    if rule.placed_package_cap is not None:
+        from placement.models import Offer
+
+        best = (
+            Offer.objects
+            .filter(
+                application__student=student,
+                status="accepted",
+                package_lpa__gte=rule.placed_package_cap,
+            )
+            .select_related("application__job_role__drive__company")
+            .order_by("-package_lpa")
+            .first()
+        )
+
+        if best:
+            company = best.application.job_role.drive.company.name
+            record(
+                "Already placed",
+                f"No accepted offer at {rule.placed_package_cap} LPA or above",
+                f"{best.package_lpa} LPA at {company}",
+                False,
+                f"You have accepted a {best.package_lpa} LPA offer from {company}.",
+            )
+        else:
+            record(
+                "Already placed",
+                f"Below {rule.placed_package_cap} LPA",
+                "Not placed",
+                True,
+            )
+    else:
+        record("Already placed", "No limit", "—", True)
+
     eligible = all(c["passed"] for c in checks)
 
     return {"eligible": eligible, "checks": checks, "blockers": blockers}
@@ -222,7 +270,7 @@ class _EmptyRule:
     min_twelfth_percent = None
     passing_year = None
     allow_lateral_entry = True
-    allow_already_placed = False
+    placed_package_cap = None
 
     def allowed_department_ids(self):
         return []

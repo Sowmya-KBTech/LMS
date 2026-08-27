@@ -950,7 +950,7 @@ def hod_assign_tutor(request):
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def hod_remove_tutor(request, tutor_id):
-    """Remove a tutor assignment."""
+
     from courses.models import YearTutor
 
     course_ids = _hod_course_ids(request.user)
@@ -973,10 +973,7 @@ def hod_remove_tutor(request, tutor_id):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def my_class(request):
-    """
-    For a teacher who is a tutor (YearTutor): their assigned class(es),
-    with students + each student's attendance % and pass/fail status.
-    """
+    
     user = request.user
 
     from courses.models import YearTutor
@@ -995,7 +992,7 @@ def my_class(request):
         return attendance_percentage(student.id)
 
     def result_status(student):
-        """passed / failed / None (no published result)."""
+        
         results = (
             SemesterResult.objects
             .filter(student=student, is_published=True)
@@ -1056,7 +1053,7 @@ def my_class(request):
 
 
 def _tutor_student_ids(user):
-    """Student ids in this tutor's assigned class(es). Matches my_class scoping."""
+ 
     from courses.models import YearTutor
     links = YearTutor.objects.filter(teacher=user).select_related("course", "year")
     if not links.exists():
@@ -1068,21 +1065,11 @@ def _tutor_student_ids(user):
 
 
 def _hod_student_ids(user):
-    """Student ids in this HOD's department(s). Matches my_department scoping."""
+
     dept_ids = list(Department.objects.filter(hod=user).values_list("id", flat=True))
     return User.objects.filter(
         role="student", department_id__in=dept_ids
     ).values_list("id", flat=True)
-
-
-def _mark_od_attendance(od):
-    """HOD approval -> set existing attendance rows in range to duty_leave."""
-    from attendance.models import Attendance
-    Attendance.objects.filter(
-        student=od.student,
-        date__gte=od.from_date,
-        date__lte=od.to_date,
-    ).update(status="duty_leave", marked_by=od.hod_reviewed_by)
 
 
 # ---------- Student ----------
@@ -1182,6 +1169,8 @@ def hod_od_pending(request):
 def hod_od_action(request, pk):
     from attendance.models import ODRequest
     from attendance.serializers import ODRequestSerializer
+    from attendance.services import mark_duty_leave
+
     action = request.data.get("action")
     remark = request.data.get("remark", "")
     try:
@@ -1198,14 +1187,21 @@ def hod_od_action(request, pk):
     if action == "approve":
         od.status = ODRequest.Status.APPROVED
         od.stage = ODRequest.Stage.CLOSED
-        _mark_od_attendance(od)
+    
+        od.save()
+        marked = mark_duty_leave(od)
     elif action == "reject":
         od.status = ODRequest.Status.REJECTED
         od.stage = ODRequest.Stage.CLOSED
+        marked = None
     else:
         return Response({"detail": "action must be approve or reject."}, status=400)
     od.save()
-    return Response(ODRequestSerializer(od).data)
+
+    data = ODRequestSerializer(od).data
+    if marked:
+        data["attendance"] = marked
+    return Response(data)
 
 
 # ===================== HOD: CLASS PERFORMANCE =====================

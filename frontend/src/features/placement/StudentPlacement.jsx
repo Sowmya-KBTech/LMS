@@ -42,6 +42,20 @@ export default function StudentPlacement() {
   const [eligibleCount, setEligibleCount] = useState(0);
   const [drivesLoading, setDrivesLoading] = useState(true);
 
+  // ================= MY OFFERS =================
+  const [myOffers, setMyOffers] = useState([]);
+  const [acceptedCount, setAcceptedCount] = useState(0);
+  const [offersLoading, setOffersLoading] = useState(true);
+  const [decidingOn, setDecidingOn] = useState(null);
+
+  // ================= APPLICATIONS =================
+  // Which role the opt-out box is open for, and what has been typed in it.
+  // Kept per-role rather than as one shared box, so opening a second one does
+  // not carry the first one's reason across.
+  const [optOutFor, setOptOutFor] = useState(null);
+  const [optOutReason, setOptOutReason] = useState("");
+  const [actingOn, setActingOn] = useState(null);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -82,7 +96,65 @@ export default function StudentPlacement() {
       .finally(() => setLoading(false));
 
     loadDrives();
+
+    loadOffers();
   }, []);
+
+  const loadOffers = () => {
+    setOffersLoading(true);
+
+    API.get("placement/my-offers/")
+      .then((res) => {
+        const d = res.data || {};
+        setMyOffers(d.results || []);
+        setAcceptedCount(d.accepted || 0);
+      })
+      .catch((err) => console.error("Offers error:", err.response?.data || err))
+      .finally(() => setOffersLoading(false));
+  };
+
+  // ================= ACCEPT / DECLINE =================
+  // The decision is entirely the student's. Nothing is auto-declined when a
+  // second offer is accepted -- holding two while deciding is a real thing to
+  // do, and the placement report counts STUDENTS with an accepted offer, not
+  // offer rows, so it cannot inflate the placed figure either way.
+  const decideOffer = async (offer, newStatus) => {
+
+    const verb = newStatus === "accepted" ? "Accept" : "Decline";
+    if (!window.confirm(
+      `${verb} the offer from ${offer.company_name}?`
+    )) {
+      return;
+    }
+
+    setError("");
+    setNotice("");
+
+    try {
+      setDecidingOn(offer.id);
+
+      await API.post(`placement/offers/${offer.id}/decide/`, {
+        status: newStatus,
+      });
+
+      setNotice(
+        newStatus === "accepted"
+          ? `Accepted the offer from ${offer.company_name}.`
+          : `Declined the offer from ${offer.company_name}.`
+      );
+
+      loadOffers();
+      // an accepted offer can close further drives, depending on each role's
+      // package cap -- so the drive list is now stale
+      loadDrives();
+
+    } catch (err) {
+      console.error("Decide offer error:", err.response?.data || err);
+      setError(err.response?.data?.detail || "Could not save your decision.");
+    } finally {
+      setDecidingOn(null);
+    }
+  };
 
   const loadDrives = () => {
     setDrivesLoading(true);
@@ -174,6 +246,69 @@ export default function StudentPlacement() {
     }
   };
 
+  // ================= APPLY / OPT OUT / WITHDRAW =================
+  // One handler for all three. The SERVER re-checks eligibility and the
+  // deadline -- this button appearing is not permission, and the page may
+  // have been open for an hour.
+  const decide = async (role, newStatus, reason = "") => {
+
+    setError("");
+    setNotice("");
+
+    try {
+      setActingOn(role.id);
+
+      const payload = { status: newStatus };
+      if (newStatus === "opted_out") {
+        payload.opt_out_reason = reason;
+      }
+
+      await API.post(`placement/roles/${role.id}/apply/`, payload);
+
+      setOptOutFor(null);
+      setOptOutReason("");
+
+      setNotice(
+        newStatus === "applied"
+          ? `Applied for ${role.title}.`
+          : newStatus === "opted_out"
+          ? `Noted — you are not interested in ${role.title}.`
+          : `Withdrawn from ${role.title}.`
+      );
+
+      // refetch rather than patching locally: the server decides the final
+      // state, and a local guess could disagree with it
+      loadDrives();
+
+    } catch (err) {
+      const data = err.response?.data;
+      console.error("Apply error:", data);
+
+      // the API returns the blockers when it refuses -- show them, since they
+      // are the only thing that tells the student what changed
+      const blockers = data?.blockers?.length
+        ? ` ${data.blockers.join(" ")}`
+        : "";
+
+      setError(
+        (data?.detail || data?.opt_out_reason?.[0] || "Could not save that.") +
+        blockers
+      );
+    } finally {
+      setActingOn(null);
+    }
+  };
+
+  // Counted from the roles already on screen rather than fetched separately:
+  // one source, so the number cannot disagree with the cards below it.
+  const appliedCount = drives.reduce(
+    (n, d) =>
+      n + (d.job_roles || []).filter(
+        (r) => r.application?.status === "applied"
+      ).length,
+    0
+  );
+
   const fmtDeadline = (value) =>
     value ? new Date(value).toLocaleString() : "No deadline set";
 
@@ -184,89 +319,255 @@ export default function StudentPlacement() {
   const withoutEligible = drives.filter((d) => !d.any_eligible);
 
   // ================= ONE ROLE =================
-  const renderRole = (role) => (
-    <div
-      key={role.id}
-      style={{
-        borderLeft: role.eligible ? "4px solid #16a34a" : "4px solid #cbd5e1",
-        background: role.eligible ? "#f0fdf4" : "#f8fafc",
-        borderRadius: "6px",
-        padding: "10px 12px",
-        marginTop: "8px",
-      }}
-    >
+  const renderRole = (role) => {
+
+    // The student's own decision on this role, sent by the server. Applied,
+    // opted out, withdrawn -- or null, meaning they have not answered, which
+    // is a real state and not an error.
+    const app = role.application;
+    const decided = app?.status;
+    const busy = actingOn === role.id;
+
+    return (
       <div
+        key={role.id}
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          gap: "12px",
-          flexWrap: "wrap",
+          borderLeft:
+            decided === "applied"
+              ? "4px solid #2563eb"
+              : role.eligible
+              ? "4px solid #16a34a"
+              : "4px solid #cbd5e1",
+          background:
+            decided === "applied"
+              ? "#eff6ff"
+              : role.eligible
+              ? "#f0fdf4"
+              : "#f8fafc",
+          borderRadius: "6px",
+          padding: "10px 12px",
+          marginTop: "8px",
         }}
       >
-        <div style={{ minWidth: 0 }}>
-          <p style={{ margin: 0, fontWeight: 600 }}>{role.title}</p>
-          <p
-            style={{
-              margin: "3px 0 0",
-              fontSize: "13px",
-              color: role.eligible ? "#166534" : "#64748b",
-            }}
-          >
-            {role.package_lpa ? `${role.package_lpa} LPA` : "Package not stated"}
-            {role.job_location ? ` · ${role.job_location}` : ""}
-            {role.openings ? ` · ${role.openings} openings` : ""}
-          </p>
-          {role.bond_details && (
-            <p style={{ margin: "3px 0 0", fontSize: "12.5px", color: "#64748b" }}>
-              Bond: {role.bond_details}
-            </p>
-          )}
-        </div>
-
-        {role.eligible && (
-          /* Applying arrives in Phase 4. A disabled button is clearer than
-             nothing -- the student can see where the action will be. */
-          <button
-            className="btn-edit"
-            disabled
-            title="Applying will be available shortly"
-          >
-            Apply (coming soon)
-          </button>
-        )}
-      </div>
-
-      {!role.eligible && role.blockers?.length > 0 && (
         <div
           style={{
-            marginTop: "8px",
-            paddingTop: "8px",
-            borderTop: "1px solid #e2e8f0",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: "12px",
+            flexWrap: "wrap",
           }}
         >
-          <p
+          <div style={{ minWidth: 0 }}>
+            <p style={{ margin: 0, fontWeight: 600 }}>{role.title}</p>
+            <p
+              style={{
+                margin: "3px 0 0",
+                fontSize: "13px",
+                color: role.eligible ? "#166534" : "#64748b",
+              }}
+            >
+              {role.package_lpa ? `${role.package_lpa} LPA` : "Package not stated"}
+              {role.job_location ? ` · ${role.job_location}` : ""}
+              {role.openings ? ` · ${role.openings} openings` : ""}
+            </p>
+            {role.bond_details && (
+              <p style={{ margin: "3px 0 0", fontSize: "12.5px", color: "#64748b" }}>
+                Bond: {role.bond_details}
+              </p>
+            )}
+          </div>
+
+          {/* ---------- ACTIONS ---------- */}
+          <div className="action-buttons">
+
+            {decided === "applied" && (
+              <>
+                <span
+                  style={{
+                    fontSize: "13px",
+                    color: "#1d4ed8",
+                    fontWeight: 600,
+                    alignSelf: "center",
+                  }}
+                >
+                  Applied
+                </span>
+                {role.is_open && (
+                  <button
+                    className="btn-delete"
+                    onClick={() => decide(role, "withdrawn")}
+                    disabled={busy}
+                  >
+                    {busy ? "..." : "Withdraw"}
+                  </button>
+                )}
+              </>
+            )}
+
+            {decided === "opted_out" && (
+              <>
+                <span
+                  style={{ fontSize: "13px", color: "#64748b", alignSelf: "center" }}
+                >
+                  Not interested
+                </span>
+                {role.eligible && role.is_open && (
+                  <button
+                    className="btn-edit"
+                    onClick={() => decide(role, "applied")}
+                    disabled={busy}
+                  >
+                    Changed my mind
+                  </button>
+                )}
+              </>
+            )}
+
+            {decided === "withdrawn" && (
+              <>
+                <span
+                  style={{ fontSize: "13px", color: "#92400e", alignSelf: "center" }}
+                >
+                  Withdrawn
+                </span>
+                {role.eligible && role.is_open && (
+                  <button
+                    className="btn-edit"
+                    onClick={() => decide(role, "applied")}
+                    disabled={busy}
+                  >
+                    Apply again
+                  </button>
+                )}
+              </>
+            )}
+
+            {/* Undecided. "Not interested" is offered even when the student
+                is NOT eligible -- otherwise they sit in the placement cell's
+                "no response" list forever with no way to answer. */}
+            {!decided && (
+              <>
+                {role.eligible && role.is_open && (
+                  <button
+                    className="btn-primary"
+                    onClick={() => decide(role, "applied")}
+                    disabled={busy}
+                  >
+                    {busy ? "..." : "Apply"}
+                  </button>
+                )}
+                {role.is_open && (
+                  <button
+                    className="btn-edit"
+                    onClick={() => {
+                      setOptOutFor(role.id);
+                      setOptOutReason("");
+                    }}
+                    disabled={busy}
+                  >
+                    Not interested
+                  </button>
+                )}
+                {!role.is_open && (
+                  <span
+                    style={{ fontSize: "13px", color: "#64748b", alignSelf: "center" }}
+                  >
+                    Closed
+                  </span>
+                )}
+              </>
+            )}
+
+          </div>
+        </div>
+
+        {/* ---------- OPT-OUT REASON ---------- */}
+        {optOutFor === role.id && (
+          <div
             style={{
-              margin: "0 0 3px",
-              fontSize: "12.5px",
-              color: "#92400e",
-              fontWeight: 600,
+              marginTop: "10px",
+              paddingTop: "10px",
+              borderTop: "1px solid #e2e8f0",
             }}
           >
-            Why you cannot apply for this role
-          </p>
-          {role.blockers.map((b) => (
-            <p
-              key={b}
-              style={{ margin: "2px 0 0", fontSize: "12.5px", color: "#64748b" }}
-            >
-              · {b}
+            <p style={{ margin: "0 0 6px", fontSize: "13px", fontWeight: 600 }}>
+              Why are you not interested?
             </p>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+            <p style={{ margin: "0 0 8px", fontSize: "12.5px", color: "#64748b" }}>
+              Your coordinator sees this. A reason is required.
+            </p>
+
+            <div className="form-grid form-grid--row">
+              <input
+                placeholder="e.g. Higher studies, location, already placed"
+                value={optOutReason}
+                onChange={(e) => setOptOutReason(e.target.value)}
+              />
+              <button
+                className="btn-primary"
+                onClick={() => {
+                  if (!optOutReason.trim()) {
+                    return alert("Please give a reason");
+                  }
+                  decide(role, "opted_out", optOutReason.trim());
+                }}
+                disabled={busy}
+              >
+                {busy ? "Saving..." : "Confirm"}
+              </button>
+              <button
+                className="btn-edit"
+                onClick={() => {
+                  setOptOutFor(null);
+                  setOptOutReason("");
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ---------- WHY NOT ---------- */}
+        {!role.eligible && !decided && role.blockers?.length > 0 && (
+          <div
+            style={{
+              marginTop: "8px",
+              paddingTop: "8px",
+              borderTop: "1px solid #e2e8f0",
+            }}
+          >
+            <p
+              style={{
+                margin: "0 0 3px",
+                fontSize: "12.5px",
+                color: "#92400e",
+                fontWeight: 600,
+              }}
+            >
+              Why you cannot apply for this role
+            </p>
+            {role.blockers.map((b) => (
+              <p
+                key={b}
+                style={{ margin: "2px 0 0", fontSize: "12.5px", color: "#64748b" }}
+              >
+                · {b}
+              </p>
+            ))}
+          </div>
+        )}
+
+        {/* ---------- THEIR REASON ---------- */}
+        {decided === "opted_out" && app?.opt_out_reason && (
+          <p style={{ margin: "8px 0 0", fontSize: "12.5px", color: "#64748b" }}>
+            Your reason: {app.opt_out_reason}
+          </p>
+        )}
+      </div>
+    );
+  };
 
   // ================= ONE DRIVE =================
   const renderDrive = (d) => (
@@ -356,6 +657,12 @@ export default function StudentPlacement() {
                   My academic details
                   {!loading && !verified ? " •" : ""}
                 </button>
+                <button
+                  className={tab === "offers" ? "btn-primary" : "btn-edit"}
+                  onClick={() => setTab("offers")}
+                >
+                  My offers{offersLoading ? "" : ` (${myOffers.length})`}
+                </button>
               </div>
             </div>
 
@@ -394,6 +701,14 @@ export default function StudentPlacement() {
                       </p>
                       <p style={{ margin: "4px 0 0", fontSize: "22px", fontWeight: 600 }}>
                         {drivesLoading ? "—" : eligibleCount}
+                      </p>
+                    </div>
+                    <div>
+                      <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>
+                        Applied
+                      </p>
+                      <p style={{ margin: "4px 0 0", fontSize: "22px", fontWeight: 600 }}>
+                        {drivesLoading ? "—" : appliedCount}
                       </p>
                     </div>
                     <div>
@@ -656,6 +971,171 @@ export default function StudentPlacement() {
                 )}
 
               </>
+            )}
+
+
+            {/* ========================================================= */}
+            {/* ================= OFFERS TAB ============================ */}
+            {/* ========================================================= */}
+            {tab === "offers" && (
+              <div className="card">
+
+                <h3>My offers</h3>
+
+                {offersLoading ? (
+                  <p>Loading...</p>
+                ) : myOffers.length === 0 ? (
+                  <p style={{ margin: 0 }}>
+                    No offers yet. They appear here once a company selects you
+                    and your placement officer records it.
+                  </p>
+                ) : (
+                  <>
+                    <p style={{ margin: "0 0 14px", fontSize: "13px", color: "#64748b" }}>
+                      {myOffers.length} offer{myOffers.length === 1 ? "" : "s"}
+                      {acceptedCount > 0
+                        ? ` · ${acceptedCount} accepted`
+                        : " · none accepted yet"}
+                      . You choose which to accept — nothing is decided for you.
+                    </p>
+
+                    {/* ONE list, not tabs by status. A student with three
+                        offers is COMPARING them, and splitting accepted from
+                        waiting would hide the comparison they came to make. */}
+                    {myOffers.map((o) => {
+                      const busy = decidingOn === o.id;
+
+                      return (
+                        <div
+                          key={o.id}
+                          style={{
+                            borderLeft:
+                              o.status === "accepted"
+                                ? "4px solid #16a34a"
+                                : o.status === "declined"
+                                ? "4px solid #cbd5e1"
+                                : "4px solid #ca8a04",
+                            background:
+                              o.status === "accepted"
+                                ? "#f0fdf4"
+                                : o.status === "declined"
+                                ? "#f8fafc"
+                                : "#fffbeb",
+                            borderRadius: "6px",
+                            padding: "12px 14px",
+                            marginBottom: "10px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "flex-start",
+                              gap: "12px",
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <div style={{ minWidth: 0 }}>
+                              <p style={{ margin: 0, fontWeight: 600, fontSize: "15px" }}>
+                                {o.company_name} — {o.role_title}
+                              </p>
+                              <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#64748b" }}>
+                                {o.package_lpa ? `${o.package_lpa} LPA` : "Package not stated"}
+                                {o.job_location ? ` · ${o.job_location}` : ""}
+                                {o.joining_date ? ` · joining ${o.joining_date}` : ""}
+                              </p>
+                              {o.remarks && (
+                                <p style={{ margin: "4px 0 0", fontSize: "12.5px", color: "#64748b" }}>
+                                  {o.remarks}
+                                </p>
+                              )}
+                              <p style={{ margin: "6px 0 0", fontSize: "12.5px", color: "#64748b" }}>
+                                Offered on {o.offered_on}
+                                {o.decided_at
+                                  ? ` · you answered on ${new Date(o.decided_at).toLocaleDateString()}`
+                                  : ""}
+                              </p>
+                            </div>
+
+                            <div className="action-buttons">
+                              {o.status === "offered" && (
+                                <>
+                                  <button
+                                    className="btn-primary"
+                                    onClick={() => decideOffer(o, "accepted")}
+                                    disabled={busy}
+                                  >
+                                    {busy ? "..." : "Accept"}
+                                  </button>
+                                  <button
+                                    className="btn-delete"
+                                    onClick={() => decideOffer(o, "declined")}
+                                    disabled={busy}
+                                  >
+                                    Decline
+                                  </button>
+                                </>
+                              )}
+
+                              {o.status === "accepted" && (
+                                <>
+                                  <span
+                                    style={{
+                                      fontSize: "13px",
+                                      color: "#166534",
+                                      fontWeight: 600,
+                                      alignSelf: "center",
+                                    }}
+                                  >
+                                    Accepted
+                                  </span>
+                                  {/* Changing their mind is allowed. A student
+                                      who accepts and then gets a better offer
+                                      should not have to ask the office. */}
+                                  <button
+                                    className="btn-edit"
+                                    onClick={() => decideOffer(o, "declined")}
+                                    disabled={busy}
+                                  >
+                                    Decline instead
+                                  </button>
+                                </>
+                              )}
+
+                              {o.status === "declined" && (
+                                <>
+                                  <span
+                                    style={{
+                                      fontSize: "13px",
+                                      color: "#64748b",
+                                      alignSelf: "center",
+                                    }}
+                                  >
+                                    Declined
+                                  </span>
+                                  <button
+                                    className="btn-edit"
+                                    onClick={() => decideOffer(o, "accepted")}
+                                    disabled={busy}
+                                  >
+                                    Accept instead
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    <p style={{ margin: "14px 0 0", fontSize: "13px", color: "#64748b" }}>
+                      Accepting an offer may close further drives, depending on
+                      the package — check the Available drives tab afterwards.
+                    </p>
+                  </>
+                )}
+
+              </div>
             )}
 
           </div>

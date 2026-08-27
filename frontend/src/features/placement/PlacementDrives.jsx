@@ -7,17 +7,6 @@ import API from "../../api";
 
 import "../../App.css";
 
-const ROUND_TYPES = [
-  { value: "screening", label: "Screening" },
-  { value: "aptitude", label: "Aptitude Test" },
-  { value: "technical_test", label: "Technical Test" },
-  { value: "coding", label: "Coding Round" },
-  { value: "gd", label: "Group Discussion" },
-  { value: "technical", label: "Technical Interview" },
-  { value: "hr", label: "HR Interview" },
-  { value: "other", label: "Other" },
-];
-
 const STATUSES = [
   { value: "draft", label: "Draft" },
   { value: "published", label: "Published" },
@@ -63,12 +52,8 @@ export default function PlacementDrives() {
   const [minTwelfth, setMinTwelfth] = useState("");
   const [passingYear, setPassingYear] = useState("");
   const [allowLateral, setAllowLateral] = useState(true);
+  const [placedCap, setPlacedCap] = useState("");
   const [allowedDepts, setAllowedDepts] = useState([]);
-
-  // ================= ROUNDS =================
-  const [roundName, setRoundName] = useState("");
-  const [roundType, setRoundType] = useState("aptitude");
-  const [roundDate, setRoundDate] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -100,8 +85,8 @@ export default function PlacementDrives() {
   };
 
   // Refetch one drive after a change, rather than patching local state by
-  // hand: roles, eligibility and rounds all hang off it, and rebuilding that
-  // shape in the browser is where the two versions drift apart.
+  // hand: roles and eligibility hang off it, and rebuilding that shape in the
+  // browser is where the two versions drift apart.
   const refreshDrive = async (driveId, keepRoleId = null) => {
     const res = await API.get(`placement/drives/${driveId}/`);
     const fresh = res.data;
@@ -187,6 +172,7 @@ export default function PlacementDrives() {
     setMinTwelfth(e.min_twelfth_percent ?? "");
     setPassingYear(e.passing_year ?? "");
     setAllowLateral(e.allow_lateral_entry !== false);
+    setPlacedCap(e.placed_package_cap ?? "");
     setAllowedDepts(e.allowed_departments || []);
 
     loadMatches(role.id);
@@ -294,6 +280,7 @@ export default function PlacementDrives() {
       min_twelfth_percent: numOrNull(minTwelfth),
       passing_year: numOrNull(passingYear),
       allow_lateral_entry: allowLateral,
+      placed_package_cap: numOrNull(placedCap),
       allowed_departments: allowedDepts.map(Number),
     };
 
@@ -313,59 +300,6 @@ export default function PlacementDrives() {
     } catch (err) {
       console.error("Eligibility error:", err.response?.data || err);
       setError("Could not save eligibility.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // ================= ROUNDS =================
-  const handleAddRound = async () => {
-
-    if (!selectedDrive) return;
-    if (!roundName.trim()) {
-      return alert("Enter the round name");
-    }
-
-    setError("");
-
-    try {
-      setSaving(true);
-
-      // `order` is NOT sent -- the server assigns the next number, so two
-      // people adding a round at once cannot collide.
-      await API.post(`placement/drives/${selectedDrive.id}/rounds/`, {
-        name: roundName.trim(),
-        round_type: roundType,
-        round_date: roundDate || null,
-      });
-
-      await refreshDrive(selectedDrive.id, selectedRole?.id);
-
-      setRoundName("");
-      setRoundDate("");
-
-    } catch (err) {
-      console.error("Add round error:", err.response?.data || err);
-      setError("Could not add the round.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteRound = async (roundId) => {
-
-    if (!window.confirm("Remove this round?")) return;
-
-    try {
-      setSaving(true);
-
-      await API.delete(`placement/rounds/${roundId}/`);
-      // the server renumbers what is left, so refetch rather than splicing
-      await refreshDrive(selectedDrive.id, selectedRole?.id);
-
-    } catch (err) {
-      console.error("Delete round error:", err.response?.data || err);
-      setError("Could not remove the round.");
     } finally {
       setSaving(false);
     }
@@ -511,6 +445,9 @@ export default function PlacementDrives() {
                     {selectedDrive.is_open ? " · open for applications" : " · not open"}
                     {" · "}
                     {roles.length} role{roles.length === 1 ? "" : "s"}
+                    {selectedDrive.drive_date
+                      ? ` · Drive on ${selectedDrive.drive_date}`
+                      : " · no drive date set"}
                   </p>
 
                   <div className="action-buttons">
@@ -774,6 +711,26 @@ export default function PlacementDrives() {
 
                       </div>
 
+                      {/* ....... ALREADY PLACED ....... */}
+                      <p style={{ margin: "14px 0 6px", fontWeight: 600 }}>
+                        Already placed
+                      </p>
+                      <p style={{ margin: "0 0 8px", fontSize: "13px", color: "#64748b" }}>
+                        A student holding an <strong>accepted</strong> offer at
+                        or above this package cannot apply. Leave blank if an
+                        offer should never block them.
+                      </p>
+
+                      <div className="form-grid form-grid--row">
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="Package cap (LPA), e.g. 6"
+                          value={placedCap}
+                          onChange={(e) => setPlacedCap(e.target.value)}
+                        />
+                      </div>
+
                       <p style={{ margin: "14px 0 6px", fontWeight: 600 }}>
                         Branches
                       </p>
@@ -818,91 +775,6 @@ export default function PlacementDrives() {
                   </>
                 )}
 
-                {/* ---------- ROUNDS ---------- */}
-                <div className="card">
-
-                  <h3>Rounds ({selectedDrive.rounds?.length || 0})</h3>
-                  <p style={{ margin: "0 0 12px", fontSize: "13px", color: "#64748b" }}>
-                    Rounds apply to the whole drive — every candidate goes
-                    through the same sequence whichever role they applied for.
-                  </p>
-
-                  <div className="form-grid form-grid--row">
-
-                    <input
-                      placeholder="Round name"
-                      value={roundName}
-                      onChange={(e) => setRoundName(e.target.value)}
-                    />
-
-                    <select
-                      value={roundType}
-                      onChange={(e) => setRoundType(e.target.value)}
-                    >
-                      {ROUND_TYPES.map((t) => (
-                        <option key={t.value} value={t.value}>
-                          {t.label}
-                        </option>
-                      ))}
-                    </select>
-
-                    <input
-                      type="date"
-                      value={roundDate}
-                      onChange={(e) => setRoundDate(e.target.value)}
-                    />
-
-                    <button
-                      className="btn-primary"
-                      onClick={handleAddRound}
-                      disabled={saving}
-                    >
-                      Add round
-                    </button>
-
-                  </div>
-
-                  <table style={{ marginTop: "14px" }}>
-                    <thead>
-                      <tr>
-                        <th>#</th>
-                        <th>Round</th>
-                        <th>Type</th>
-                        <th>Date</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedDrive.rounds?.length > 0 ? (
-                        selectedDrive.rounds.map((r) => (
-                          <tr key={r.id}>
-                            <td>{r.order}</td>
-                            <td>{r.name}</td>
-                            <td>{r.round_type_display}</td>
-                            <td>{r.round_date || "—"}</td>
-                            <td>
-                              <div className="action-buttons">
-                                <button
-                                  className="btn-delete"
-                                  onClick={() => handleDeleteRound(r.id)}
-                                  disabled={saving}
-                                >
-                                  Remove
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan="5">No rounds added yet.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-
-                </div>
-
               </>
             )}
 
@@ -918,7 +790,7 @@ export default function PlacementDrives() {
                     <th>Title</th>
                     <th>Roles</th>
                     <th>Deadline</th>
-                    <th>Rounds</th>
+                    <th>Drive date</th>
                     <th>Status</th>
                     <th>Action</th>
                   </tr>
@@ -939,7 +811,7 @@ export default function PlacementDrives() {
                             ? new Date(d.application_deadline).toLocaleString()
                             : "—"}
                         </td>
-                        <td>{d.rounds?.length || 0}</td>
+                        <td>{d.drive_date || "—"}</td>
                         <td>
                           {d.is_open ? (
                             <span style={{ color: "#166534" }}>Open</span>
