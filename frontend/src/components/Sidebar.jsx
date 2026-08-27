@@ -14,12 +14,6 @@ export default function Sidebar({ open, setOpen }) {
   const [isHod, setIsHod] = useState(false);
   const [isTutor, setIsTutor] = useState(false);
 
-  // ================= PLACEMENT COORDINATOR =================
-  // Coordinator is an ASSIGNMENT, not a role, so it cannot be read from
-  // localStorage like user.role can -- it has to be asked for. Same reason
-  // isHod and isTutor are fetched above.
-  const [isPlacementCoordinator, setIsPlacementCoordinator] = useState(false);
-
   useEffect(() => {
     if (user.role === "teacher") {
       API.get("users/my-department/")
@@ -29,14 +23,6 @@ export default function Sidebar({ open, setOpen }) {
       API.get("users/my-class/")
         .then((res) => setIsTutor(res.data?.is_tutor || false))
         .catch(() => setIsTutor(false));
-
-      // the backend is the single source of truth for who is a coordinator;
-      // the sidebar never decides this for itself
-      API.get("placement/me/")
-        .then((res) =>
-          setIsPlacementCoordinator(res.data?.is_placement_coordinator || false)
-        )
-        .catch(() => setIsPlacementCoordinator(false));
     }
   }, [user.role]);
 
@@ -59,7 +45,6 @@ export default function Sidebar({ open, setOpen }) {
       { name: "Timetable Builder", path: "/timetable-builder" },
       { name: "Results", path: "/results" },
       { name: "Fee Management", path: "/admin/fees" },
-      { name: "Placement", path: "/placement" },
       { name: "Calendar", path: "/calendar" },
       { name: "Announcements", path: "/announcements" },
       { name: "Profile", path: "/profile" },
@@ -104,25 +89,6 @@ export default function Sidebar({ open, setOpen }) {
     ];
   }
 
-  // ================= PLACEMENT OFFICER =================
-  // role='admin' + sub_role='placement_officer'. Runs placement for the whole
-  // college; every department, every drive.
-  else if (user.role === "admin" && subRole === "placement_officer") {
-    menu = [
-      { name: "Dashboard", path: "/placement" },
-      { name: "Coordinators", path: "/placement/coordinators" },
-      { name: "Companies", path: "/placement/companies" },
-      { name: "Drives", path: "/placement/drives" },
-      { name: "Applications", path: "/placement/applications" },
-      { name: "Drive attendance", path: "/placement/interviews" },
-      { name: "Offers", path: "/placement/offers" },
-      { name: "Reports", path: "/placement/reports" },
-      { name: "Announcements", path: "/announcements" },
-      { name: "Notifications", path: "/notifications" },
-      { name: "Profile", path: "/profile" },
-    ];
-  }
-
   // ================= TEACHER =================
   else if (user.role === "teacher") {
     menu = [
@@ -131,18 +97,16 @@ export default function Sidebar({ open, setOpen }) {
         { name: "My Department", path: "/my-department" },
         { name: "Plan Approvals", path: "/my-department/teaching-plans" },
         { name: "Faculty Allocation", path: "/hod/allocation" },
+        { name: "Mentor Allocation", path: "/hod/mentor-allocation" },
       ] : []),
       ...(isTutor ? [{ name: "My Class", path: "/my-class" }] : []),
       // teachers get their OWN subjects page — /courses is the admin course editor
       { name: "My Subjects", path: "/teacher/courses" },
       { name: "Timetable", path: "/timetable" },
       { name: "My Teaching Plan", path: "/teacher/teaching-plan" },
+      { name: "My Mentees", path: "/my-mentees" },
+      { name: "My Groups", path: "/my-groups" },
       { name: "Attendance", path: "/teacher/attendance" },
-      // shown only to a teacher who ALSO holds a coordinator assignment;
-      // they keep every teaching menu above it
-      ...(isPlacementCoordinator
-        ? [{ name: "Placement", path: "/placement/coordinator" }]
-        : []),
       { name: "Calendar", path: "/calendar" },
       { name: "Results", path: "/results" },
       { name: "Student Progress", path: "/teacher-progress" },
@@ -160,10 +124,11 @@ export default function Sidebar({ open, setOpen }) {
       { name: "Electives", path: "/student/electives" },
       { name: "Timetable", path: "/timetable" },
       { name: "Attendance", path: "/student/attendance" },
+      { name: "My Mentor", path: "/my-mentor" },
+      { name: "My Groups", path: "/my-groups" },
       { name: "Grades", path: "/student/grades" },
       { name: "Results", path: "/results" },
       { name: "My Progress", path: "/student-progress" },
-      { name: "Placement", path: "/student/placement" },
       { name: "Calendar", path: "/calendar" },
       { name: "Announcements", path: "/announcements" },
       { name: "Feedback History", path: "/feedback" },
@@ -209,31 +174,6 @@ export default function Sidebar({ open, setOpen }) {
     // student: /student/subject/:id belongs to "My Subjects"
     if (location.pathname.startsWith("/student/subject/")) {
       if (itemPath === "/student/courses") {
-        return true;
-      }
-    }
-
-    // ================= PLACEMENT =================
-    // Placement paths can nest (/placement/drives, /placement/offers), so an
-    // exact match alone would drop the highlight on a detail page.
-    if (location.pathname.startsWith("/student/placement")) {
-      if (itemPath === "/student/placement") {
-        return true;
-      }
-    }
-
-    if (location.pathname.startsWith("/placement/coordinator")) {
-      if (itemPath === "/placement/coordinator") {
-        return true;
-      }
-    }
-
-    if (
-      location.pathname.startsWith("/placement/") &&
-      !location.pathname.startsWith("/placement/coordinator")
-    ) {
-      // highlight the deepest matching section item, not the dashboard
-      if (itemPath !== "/placement" && location.pathname.startsWith(itemPath)) {
         return true;
       }
     }

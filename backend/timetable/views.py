@@ -11,7 +11,7 @@ from courses.models import Enrollment, TeachingAssignment
 
 from .models import (
     TimeSlot, TimetableEntry, TimetableApproval, Room,
-    ActivityType, ClassActivity, Semester, 
+    ActivityType, ClassActivity, Semester, Holiday,
 )
 from .serializers import (
     TimeSlotSerializer, TimetableEntrySerializer, RoomSerializer,
@@ -23,6 +23,9 @@ from .services import availability, validate_submission, _locked_entries
 from .solver import autofill
 
 
+# ---------- tunables ----------
+# How long an untouched DRAFT keeps its hold on the slots it occupies.
+# One number, one place — read wherever a draft's freshness is judged.
 HOLD_HOURS = 48
 
 
@@ -654,41 +657,20 @@ class SemesterActive(generics.ListCreateAPIView):
 
 
 class HolidayListCreate(generics.ListCreateAPIView):
-
+    queryset = Holiday.objects.all()
     serializer_class = HolidaySerializer
     permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        from events.models import CalendarEvent
-        return CalendarEvent.objects.filter(event_type="holiday").order_by("start_date")
 
     def perform_create(self, serializer):
         if not is_admin(self.request.user):
             raise PermissionDenied("Only an admin can add holidays.")
-
-        from events.models import CalendarEvent
-
-        data = serializer.validated_data
-
-        # source='manual' matters: the Google holiday sync only touches rows
-        # it created, so a holiday typed in here survives the next re-sync.
-        event = CalendarEvent.objects.create(
-            title=data["name"],
-            event_type="holiday",
-            source="manual",
-            start_date=data["date"],
-            end_date=data["date"],
-        )
-        serializer.instance = event
+        serializer.save()
 
 
 class HolidayDetail(generics.RetrieveDestroyAPIView):
+    queryset = Holiday.objects.all()
     serializer_class = HolidaySerializer
     permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        from events.models import CalendarEvent
-        return CalendarEvent.objects.filter(event_type="holiday")
 
     def perform_destroy(self, instance):
         if not is_admin(self.request.user):

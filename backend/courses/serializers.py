@@ -630,11 +630,20 @@ class ParentMessageSerializer(serializers.ModelSerializer):
 class ConversationMessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.CharField(source='sender.username', read_only=True)
     receiver_name = serializers.CharField(source='receiver.username', read_only=True)
+    attachment_url = serializers.SerializerMethodField()
 
     class Meta:
         model = ConversationMessage
         fields = ['id', 'sender', 'sender_name', 'receiver',
-                  'receiver_name', 'text', 'is_read', 'created_at']
-        read_only_fields = ['sender', 'created_at']
-        
+                  'receiver_name', 'text', 'is_read', 'created_at',
+                  'attachment_url', 'attachment_name', 'attachment_size']
+        read_only_fields = ['sender', 'created_at',
+                            'attachment_name', 'attachment_size']
+
+    def get_attachment_url(self, obj):
+        if not obj.attachment:
+            return None
+        request = self.context.get('request')
+        url = obj.attachment.url
+        return request.build_absolute_uri(url) if request else url      
 
