@@ -1,0 +1,17 @@
+# STEP 8.5: never copy these into the Docker image
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.docker.example
+logs/
+*.log
+*.txt
+!requirements.txt
+media/
+staticfiles/
+celerybeat-schedule*
+dump.rdb
+*.bat

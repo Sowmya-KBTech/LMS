@@ -1,0 +1,547 @@
+/* =========================================================
+   TimetableBuilder.css — scoped under .tb
+   Builder shell, tabs, Periods / Rooms / Holidays panels,
+   and the drag-and-drop Grid panel.
+   ========================================================= */
+
+.tb {
+  --bg:#F6F6F8; --surface:#fff; --ink:#17151F; --muted:#5D5A6B; --line:#E7E7EC;
+  --primary:#4B32C3; --primary-d:#2f49d6; --fill:#EEEAFB; --fill-bd:#c9d4ff;
+  --break:#ECECF0; --danger:#e23b4e;
+
+  padding: 26px clamp(16px,3vw,40px) 48px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: inherit;
+  flex: 1;
+  min-height: 0; /* fills the main panel (was 100vh) */
+  overflow-y: auto;
+}
+
+.tb-head h1 { font-size: 1.6rem; font-weight: 700; letter-spacing:.03em; margin: 0; }
+.tb-head p { margin: 5px 0 18px; color: var(--muted); font-size: 15px; }
+
+/* ---------------- tabs ---------------- */
+.tb-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.tb-tabs button {
+  border: 1px solid var(--line); background: #fff; color: var(--muted);
+  font-weight: 700; font-size: 15px; padding: 9px 18px; border-radius: 10px; cursor: pointer;
+}
+.tb-tabs button.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+/* ---------------- cards ---------------- */
+.tb-card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+  padding: 24px 26px; margin-bottom: 20px;
+  box-shadow: 0 12px 32px -24px rgba(30,41,59,.45);
+}
+.tb-card-title { font-size: 20px; font-weight: 700; margin: 0 0 18px; }
+
+.tb-form { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+.tb-field { display: flex; flex-direction: column; gap: 6px; }
+.tb-field span { font-size: 14px; font-weight: 600; color: var(--muted); }
+.tb-field input, .tb-field select {
+  border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px;
+  font-size: 15px; font-family: inherit; color: var(--ink); background: #fbfcfe; min-width: 130px;
+}
+.tb-field input:focus, .tb-field select:focus {
+  outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,91,255,.15);
+}
+.tb-field input[type="date"] { min-width: 160px; }
+
+.tb-btn {
+  border: none; background: #4B32C3; color: #fff; font-weight: 600; font-size: 15px;
+  padding: 10px 14px; border-radius: 10px; cursor: pointer; transition: .2s;
+}
+.tb-btn:hover { opacity: .9; }
+.tb-btn:disabled { opacity: .6; cursor: not-allowed; }
+.tb-btn-sm { padding: 10px 14px; font-size: 15px; }
+
+.tb-error {
+  background:#fdecee; color:var(--danger); border:1px solid #f6c9cf; border-radius:10px;
+  padding:10px 14px; font-size:14.5px; margin-top:14px;
+}
+.tb-hint { margin-top: 14px; font-size: 13.5px; color: var(--muted); }
+.tb-state { color: var(--muted); font-size: 15px; }
+
+/* ---------------- list tables ---------------- */
+.tb-list { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.tb-list th {
+  text-align:left; font-size:17px; text-transform:uppercase; letter-spacing:.05em;
+  color:#000; padding:10px 12px; border-bottom:1px solid var(--line);
+}
+.tb-list td {
+  padding:13px 12px; border-bottom:1px solid var(--line); font-size:15px; vertical-align: middle;
+}
+.tb-list tr:last-child td { border-bottom: none; }
+.tb-list th:nth-child(1), .tb-list td:nth-child(1) { width: 22%; }
+.tb-list th:nth-child(2), .tb-list td:nth-child(2) { width: 26%; }
+.tb-list th:nth-child(3), .tb-list td:nth-child(3) { width: 16%; }
+.tb-list th:nth-child(4), .tb-list td:nth-child(4) { width: 36%; }
+.tb-right { text-align: left; }
+
+.tb-actions { display: flex; gap: 10px; align-items: center; }
+
+.tb-pill { font-size: 14px; font-weight: 600; padding: 3px 11px; border-radius: 15px; }
+.tb-pill.cls { background: var(--fill); color: var(--primary); }
+.tb-pill.brk { background: #fef3e2; color: #8A4B0A; }
+
+.tb-del {
+  border:none; background:#ef4444; color:#fff; font-weight:400; font-size:15px;
+  cursor:pointer; padding:10px 14px; border-radius:10px; transition:.2s;
+}
+.tb-del:hover { opacity:.9; }
+
+.tb-edit {
+  border:none; background:#4a4ce0; color:#fff; font-weight:400; font-size:15px;
+  cursor:pointer; padding:10px 14px; border-radius:10px; transition:.2s;
+}
+.tb-edit:hover { opacity:.9; }
+
+.tb-cancel {
+  border:1px solid var(--line); background:#fff; color:var(--muted); font-weight:400;
+  font-size:15px; cursor:pointer; padding:10px 14px; border-radius:10px; transition:.2s;
+}
+.tb-cancel:hover { background:#f3f4f6; }
+
+.tb-edit-cell { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.tb-edit-cell select, .tb-edit-cell input {
+  border:1px solid var(--line); border-radius:8px; padding:7px 9px; font-size:14px;
+  font-family:inherit; color:var(--ink); background:#fbfcfe;
+}
+.tb-edit-cell select:focus, .tb-edit-cell input:focus {
+  outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(59,91,255,.15);
+}
+
+/* ---------------- grid controls ---------------- */
+.tb-controls { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:14px; }
+.tb-controls select, .tb-controls input {
+  border:1px solid var(--line); border-radius:11px; padding:11px 14px; font-size:15.5px;
+  font-family:inherit; background:#fff; color:var(--ink); min-width:180px;
+}
+.tb-controls select:disabled { opacity:.55; }
+.tb-controls select:focus, .tb-controls input:focus {
+  outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(59,91,255,.15);
+}
+
+.tb-empty {
+  background:#fff; border:1px dashed var(--line); border-radius:14px; padding:40px;
+  text-align:center; color:var(--muted); font-size:15.5px;
+}
+.tb-link {
+  border:none; background:transparent; color:var(--primary); font-weight:700;
+  font-size:15.5px; cursor:pointer;
+}
+.tb-link:hover { text-decoration: underline; }
+
+/* =========================================================
+   BUILDER LAYOUT — palette on the left, grid on the right
+   ========================================================= */
+.tb-layout {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+/* min-width:0 is load-bearing — without it the flex child refuses
+   to shrink and the grid columns get crushed. */
+.tb-layout .tb-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---------------- subject palette ---------------- */
+.tb-palette { width: 205px; flex: none; }
+
+.tb-palette-head {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.tb-chip {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: grab;
+  transition: border-color .12s, box-shadow .12s;
+}
+.tb-chip:hover {
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(59,91,255,.10);
+}
+.tb-chip:active { cursor: grabbing; }
+.tb-chip-full { opacity: .45; }
+.tb-chip-drag { opacity: .4; }
+
+.tb-chip-name {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.25;
+}
+.tb-chip-meta {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 3px;
+  line-height: 1.3;
+}
+
+.tb-chip-bar {
+  height: 4px;
+  background: #eef0f6;
+  border-radius: 3px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+.tb-chip-fill {
+  height: 4px;
+  background: var(--primary);
+  border-radius: 3px;
+  transition: width .2s;
+}
+.tb-chip-fill-full { background: #15803d; }
+
+/* ---------------- grid ---------------- */
+.tb-wrap {
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 8px;
+  box-shadow: 0 12px 32px -24px rgba(30,41,59,.45);
+}
+
+.tb-grid {
+  width: 100%;
+  table-layout: fixed;          /* equal day columns — stops WED/SAT collapsing */
+  border-collapse: separate;
+  border-spacing: 6px;
+  min-width: 760px;
+}
+
+.tb-grid th {
+  font-size: 13px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+  padding: 10px 6px;
+  text-align: center;
+}
+.tb-corner { text-align: left !important; padding-left: 12px !important; }
+
+/* the period column is fixed; the six day columns share what's left */
+.tb-grid th:first-child,
+.tb-grid td:first-child { width: 96px; }
+
+.tb-per {
+  background: #F6F6F8;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 6px;
+  font-weight: 700;
+  font-size: 14px;
+  text-align: center;
+  white-space: nowrap;
+}
+.tb-per span {
+  display: block;
+  margin-top: 3px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* the <td> is now just a container — the .tb-cell DIV inside it is the box */
+.tb-grid td { padding: 0; border: none; background: transparent; }
+
+.tb-grid .tb-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  height: 66px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fcfdff;
+  text-align: center;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+
+.tb-grid .tb-cell strong {
+  display: block;
+  width: 100%;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tb-grid .tb-cell small {
+  display: block;
+  width: 100%;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* remove (×) button on a filled cell */
+.tb-x {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  border: none;
+  background: transparent;
+  color: var(--danger);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  z-index: 2;
+}
+.tb-x:hover { transform: scale(1.2); }
+
+/* ---------------- the three cell states ----------------
+   has = a subject is here      (blue)
+   no  = you can't use this     (grey)  — only while dragging
+   ok  = free to drop           (green) — only while dragging
+   ------------------------------------------------------- */
+.tb-cell-has {
+  background: #e7edfd;
+  border-color: var(--fill-bd);
+  color: var(--primary);
+}
+.tb-cell-has small { color: #5b78d6; }
+
+.tb-cell-no {
+  background: #eef0f6;
+  border-color: var(--line);
+  color: #b6bccd;
+  cursor: not-allowed;
+}
+
+.tb-cell-ok {
+  background: #e6f6ee;
+  border: 2px dashed #15803d;
+}
+
+.tb-plus { color: #cbd5e1; font-size: 15px; }
+.tb-free { color: #cbd5e1; }
+
+/* ---------------- break / lunch rows ---------------- */
+.tb-brkrow td:not(.tb-per) {
+  background: var(--break);
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 14px 0;
+}
+.tb-brkrow .tb-per { background: #fff7ed; }
+
+
+/* a chip that has been clicked (selected) */
+.tb-chip-on {
+  border-color: var(--primary);
+  background: #EEEAFB;
+  box-shadow: 0 0 0 3px rgba(59, 91, 255, .14);
+}
+
+/* an empty cell where a teacher is already booked elsewhere */
+.tb-busy {
+  font-size: 10.5px;
+  color: #8A4B0A;
+  line-height: 1.15;
+  padding: 2px;
+  text-align: center;
+}
+
+/* ===== submit conflicts (Layer 3) ===== */
+.tb-conflicts {
+  background: #fff;
+  border: 1px solid #fecaca;
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+.tb-conflicts h4 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #dc2626;
+  margin: 0 0 3px;
+}
+.tb-conflicts > p {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+
+.tb-conflict {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px 0;
+  border-top: 1px solid #ECECF0;
+}
+.tb-conflict-what { flex: 1; min-width: 220px; }
+.tb-conflict-what strong { display: block; font-size: 15px; }
+.tb-conflict-what span { font-size: 13.5px; color: var(--muted); }
+
+.tb-conflict-fix { display: flex; gap: 8px; flex-wrap: wrap; }
+.tb-conflict-none { font-size: 13.5px; color: #8A4B0A; }
+
+/* =========================================================
+   ACTIVITIES — append to the bottom of
+   frontend/src/Style/timetableBuilder.css
+   ========================================================= */
+
+/* ---- the config box: tick what this class has, once ---- */
+.tb-acts {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.tb-acts-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: none;
+  background: #F6F6F8;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+}
+.tb-acts-head:hover { background: #ECECF0; }
+
+.tb-acts-body { padding: 10px 12px; }
+
+.tb-act-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 0;
+}
+.tb-act-row label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+.tb-act-row input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.tb-act-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.tb-act-n {
+  width: 48px;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font-size: 13.5px;
+  font-family: inherit;
+  text-align: center;
+  color: var(--ink);
+  background: #fbfcfe;
+}
+.tb-act-n:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.tb-act-add {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.tb-act-add input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--ink);
+  background: #fbfcfe;
+}
+.tb-act-add input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.tb-act-add .tb-btn { padding: 6px 12px; font-size: 13.5px; }
+
+/* ---- an activity chip in the palette ---- */
+.tb-chip-act {
+  background: #fbfcfe;
+}
+
+/* ---- an activity sitting in the grid.
+       The inline style carries its own colour; this just sets the shape. ---- */
+.tb-cell-act {
+  border: 1px dashed;
+  font-weight: 600;
+}
+.tb-cell-act small {
+  opacity: .75;
+}
+
+/* ---- typing straight into an empty cell ---- */
+.tb-grid .tb-cell .tb-type {
+  width: 92%;
+  padding: 4px 6px;
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--ink);
+  background: #fff;
+}
+
+.tb-grid .tb-cell .tb-type:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 91, 255, .14);
+}

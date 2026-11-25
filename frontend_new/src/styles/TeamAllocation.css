@@ -1,0 +1,256 @@
+/* frontend/src/styles/TeamAllocation.css
+   Team-based mentor allocation. Sits alongside MentorAllocation.css and
+   reuses its cards, panels, pills and buttons. */
+
+/* .content is a flex column with a fixed height, so anything with
+   overflow hidden collapses unless it refuses to shrink. */
+.tm-grid,
+.tm-team,
+.ma-batch {
+  flex-shrink: 0;
+}
+
+.tm-chip {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 8px;
+  background: #EEEAFB;
+  color: #4B32C3;
+  border: 1px solid #DCD3FF;
+  border-radius: 999px;
+  padding: 3px 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+/* ================= TEAM CARDS ================= */
+.tm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  gap: 14px;
+  padding: 18px 20px;
+}
+
+.tm-team {
+  border: 1px solid #E7E7EC;
+  border-radius: 12px;
+  background: #fff;
+  padding: 15px 16px;
+}
+.tm-team.mine { border-color: #bbf7d0; background: #fbfffc; }
+.tm-team.full { opacity: 0.72; }
+
+.tm-team-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+.tm-team-head b { font-size: 15.5px; font-weight: 600; }
+
+.tm-slots { display: flex; flex-direction: column; gap: 9px; }
+
+.tm-slot { display: flex; align-items: center; gap: 10px; font-size: 14.3px; }
+.tm-slot .nm { font-weight: 500; }
+.tm-slot .rl { font-size: 12.6px; color: #5D5A6B; margin-top: 1px; }
+.tm-slot.open .nm { color: #9aa3ae; font-style: italic; font-weight: 400; }
+
+.tm-you {
+  background: #ecfdf3;
+  color: #15803d;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  margin-left: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* ================= GRADE BAND ================= */
+.tm-band {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.tm-band.a { background: #ecfdf3; color: #15803d; }
+.tm-band.b { background: #EEEAFB; color: #4B32C3; }
+.tm-band.c { background: #fff7ed; color: #c2410c; }
+.tm-band.none { background: #ECECF0; color: #85839A; }
+.tm-band.ghost {
+  background: #F6F6F8;
+  color: #cbd5e1;
+  border: 1px dashed #dbe2ea;
+}
+
+.tm-wide { width: 100%; margin-top: 13px; }
+.tm-wide:disabled { font-size: 13px; }
+
+/* ================= BAND SUPPLY (advisor) ================= */
+.tm-supply {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+  padding: 18px 20px;
+  flex-shrink: 0;
+}
+
+.tm-sup {
+  border: 1px solid #E7E7EC;
+  border-radius: 12px;
+  padding: 14px 15px;
+  background: #fff;
+}
+.tm-sup.short { border-color: #fed7aa; background: #fffdfa; }
+
+.tm-sup-top {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 11px;
+}
+.tm-sup-top b { font-size: 21px; font-weight: 600; line-height: 1; }
+.tm-sup-top i { font-style: normal; font-size: 13.5px; color: #5D5A6B; }
+.tm-sup-top .ma-pill { margin-left: auto; }
+
+.tm-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: #ECECF0;
+  overflow: hidden;
+}
+.tm-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: #4B32C3;
+}
+.tm-sup.short .tm-bar > span { background: #c2410c; }
+
+@media (max-width: 760px) {
+  .tm-grid { grid-template-columns: 1fr; padding: 15px; }
+}
+
+/* ================= MENTORS TAB ================= */
+.tm-strip {
+  background: #fff;
+  border: 1px solid #E7E7EC;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.04);
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.tm-sv { display: flex; flex-direction: column; gap: 2px; }
+.tm-sv b { font-size: 25px; font-weight: 600; line-height: 1.1; }
+.tm-sv b.warn { color: #c2410c; }
+.tm-sv span { font-size: 13.4px; color: #5D5A6B; }
+.tm-sv em { font-style: normal; font-size: 12.5px; color: #85839A; }
+
+.tm-sdiv { width: 1px; align-self: stretch; background: #E7E7EC; }
+.tm-sright {
+  margin-left: auto;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.tm-sticky-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 15;
+  box-shadow: 0 -3px 10px rgba(16, 24, 40, 0.05);
+}
+
+.tm-cell { display: flex; align-items: center; gap: 8px; }
+.tm-cell + .tm-cell { margin-top: 7px; }
+.tm-cell .nm { font-weight: 500; font-size: 14.3px; }
+.tm-cell .rl { font-size: 12.4px; color: #85839A; }
+
+.tm-none { color: #b8c0cc; font-style: italic; font-size: 13.8px; }
+
+tr.tm-row-missing td { background: #fffdf8; }
+select.tm-edited { border-color: #fdba74; background: #fffbf5; }
+
+@media (max-width: 900px) {
+  .tm-sdiv { display: none; }
+  .tm-strip { position: static; }
+}
+
+/* ================= HOD RULES + PROPOSALS ================= */
+.tm-rule {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #ECECF0;
+  flex-shrink: 0;
+}
+.tm-rule:last-of-type { border-bottom: none; }
+.tm-rule input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  margin-top: 2px;
+  accent-color: #4B32C3;
+}
+.tm-rule b { font-size: 15px; font-weight: 600; display: block; }
+.tm-rule p { font-size: 13.8px; color: #5D5A6B; margin-top: 3px; line-height: 1.55; }
+.tm-rule select { margin-left: auto; min-width: 170px; }
+
+.tm-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.8px;
+  margin-right: 14px;
+  white-space: nowrap;
+}
+
+.tm-reason {
+  font-size: 12.8px;
+  color: #8A4B0A;
+  margin-top: 3px;
+}
+tr.tm-left-out td { background: #fbfcfd; }
+tr.tm-left-out .tm-reason { color: #5D5A6B; }
+
+/* My Mentees — tab bar split into mentor work and tutor work */
+.mt-tabbar {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.mt-tabgroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 18px;
+  border-left: 1px solid #E7E7EC;
+}
+
+.mt-tabgroup-label {
+  margin: 0;
+  white-space: nowrap;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: #5D5A6B;
+}

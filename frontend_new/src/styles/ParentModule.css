@@ -1,0 +1,96 @@
+/* =========================================================
+   PARENT MODULE — shared styles
+   Prefixed with .pm- so it never clashes with your global
+   App.css classes (.card, .stat-card, table, .badge ...).
+   ========================================================= */
+
+.pm-page { display: flex; flex-direction: column; gap: 18px; width: 100%; }
+
+/* ── Header ── */
+.pm-header h1 { font-size: 32px; font-weight: 700; color: #17151F; letter-spacing: -0.4px; }
+.pm-header p  { font-size: 15px; color: #5D5A6B; margin-top: 4px; }
+
+/* ── Child tabs ── */
+.pm-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.pm-tab {
+  padding: 6px 16px; border-radius: 20px; font-size: 14px;
+  border: 1px solid #E7E7EC; cursor: pointer; color: #5D5A6B;
+  background: #ffffff; transition: all 0.15s; user-select: none;
+}
+.pm-tab:hover  { border-color: #4B32C3; color: #4B32C3; }
+.pm-tab.active { background: #4B32C3; color: #fff; border-color: #4B32C3; }
+
+/* ── Stat grid ── */
+.pm-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.pm-stat-grid.three { grid-template-columns: repeat(3, 1fr); }
+.pm-stat-card {
+  background: #ffffff; border-radius: 14px; border: 1px solid #E7E7EC;
+  padding: 18px 20px;
+}
+.pm-stat-label { font-size: 13px; color: #5D5A6B; margin-bottom: 8px; font-weight: 500; }
+.pm-stat-val   { font-size: 26px; font-weight: 700; color: #17151F; letter-spacing: -0.5px; }
+.pm-stat-val.blue   { color: #4B32C3; }
+.pm-stat-val.green  { color: #16a34a; }
+.pm-stat-val.orange { color: #d97706; }
+.pm-stat-val.red    { color: #dc2626; }
+
+/* ── Cards ── */
+.pm-card {
+  background: #ffffff; border-radius: 14px; border: 1px solid #E7E7EC;
+  padding: 20px;
+}
+.pm-card-title { font-size: 15px; font-weight: 600; color: #17151F; margin-bottom: 14px; }
+.pm-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pm-stack  { display: flex; flex-direction: column; gap: 16px; }
+
+/* ── Tables ── */
+.pm-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.pm-table th {
+  text-align: left; font-weight: 600; font-size: 12px; letter-spacing: 0.05em;
+  color: #5D5A6B; text-transform: uppercase;
+  padding: 0 10px 10px; border-bottom: 1px solid #E7E7EC;
+}
+.pm-table td { padding: 11px 10px; border-bottom: 1px solid #E7E7EC; color: #1a1d2e; }
+.pm-table tr:last-child td { border-bottom: none; }
+.pm-table tbody tr:hover td { background: #F6F6F8; }
+
+/* ── Badges ── */
+.pm-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.pm-badge.green  { background: #dcfce7; color: #166534; }
+.pm-badge.yellow { background: #fef9c3; color: #854d0e; }
+.pm-badge.red    { background: #fee2e2; color: #991b1b; }
+.pm-badge.blue   { background: #E3DCFA; color: #3A25A3; }
+.pm-badge.gray   { background: #eef0f7; color: #5D5A6B; }
+
+/* ── Progress bars (attendance overview) ── */
+.pm-progress-wrap { margin-bottom: 14px; }
+.pm-progress-row  { display: flex; align-items: center; gap: 10px; }
+.pm-progress-name { font-size: 14px; font-weight: 500; width: 120px; flex-shrink: 0; color: #1a1d2e; }
+.pm-progress-bar  { flex: 1; height: 7px; background: #eef0f7; border-radius: 4px; overflow: hidden; }
+.pm-progress-fill { height: 100%; border-radius: 4px; background: #4B32C3; }
+.pm-progress-pct  { font-size: 13px; color: #5D5A6B; width: 40px; text-align: right; flex-shrink: 0; }
+
+/* ── Notification list ── */
+.pm-notif-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #E7E7EC; }
+.pm-notif-item:last-child { border-bottom: none; }
+.pm-notif-dot  { width: 9px; height: 9px; border-radius: 50%; background: #4B32C3; flex-shrink: 0; margin-top: 5px; }
+.pm-notif-dot.gray { background: #85839A; }
+.pm-notif-text { font-size: 14px; color: #1a1d2e; line-height: 1.5; }
+.pm-notif-time { font-size: 12px; color: #85839A; margin-top: 3px; }
+
+/* ── Fee rows ── */
+.pm-fee-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #E7E7EC; font-size: 14px; }
+.pm-fee-row:last-child { border-bottom: none; }
+.pm-fee-label { color: #5D5A6B; }
+.pm-fee-val   { font-weight: 600; color: #1a1d2e; }
+.pm-fee-val.green { color: #16a34a; }
+.pm-fee-val.red   { color: #dc2626; }
+
+/* ── States ── */
+.pm-empty   { text-align: center; color: #85839A; font-size: 14px; padding: 28px 0; }
+.pm-loading { text-align: center; color: #5D5A6B; font-size: 14px; padding: 28px 0; }
+
+@media (max-width: 900px) {
+  .pm-stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .pm-two-col   { grid-template-columns: 1fr; }
+}

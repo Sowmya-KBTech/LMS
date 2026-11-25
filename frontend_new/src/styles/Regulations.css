@@ -1,0 +1,90 @@
+/* WAVE 3 PART 1A - CBCS pages: Regulations.jsx, Curriculum.jsx (rg- prefix). */
+.rg-page { position: relative; min-width: 0; }
+.rg-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.rg-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.rg-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.rg-muted { color: var(--ink-2, #5D5A6B); font-size: 13.5px; margin: 0; }
+.rg-h2 { margin: 0; font-size: 17px; }
+.rg-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.rg-field { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--ink-2, #5D5A6B); min-width: 0; }
+.rg-field .kb-input, .rg-field select { min-width: 150px; }
+.rg-grow { flex: 1 1 240px; }
+.rg-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.rg-head-actions, .rg-foot-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.rg-right { justify-content: flex-end; margin-top: 12px; }
+.rg-msg { padding: 10px 12px; border-radius: 10px; font-size: 14px; margin: 0 0 12px; }
+.rg-msg.ok { background: #E7F6EC; color: #15803D; }
+.rg-msg.bad { background: #FDECEC; color: #B42318; }
+.rg-ok { color: #15803D; }
+.rg-bad { color: #B42318; }
+.rg-nowrap { white-space: nowrap; }
+
+/* layout: list + editor */
+.rg-layout { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.rg-list { flex: 1 1 220px; max-width: 280px; display: flex; flex-direction: column; gap: 8px; }
+.rg-item { text-align: left; background: #fff; border: 1px solid var(--line, #E7E7EC); border-radius: 14px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 4px; cursor: pointer; font: inherit; color: inherit; min-height: 44px; }
+.rg-item.on { border: 1.5px solid var(--brand, #4B32C3); background: #FAFAFF; }
+.rg-item-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rg-item-top b { font-size: 16px; }
+.rg-editor { flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.rg-editor .kb-card, .rg-page > .kb-card { margin: 0; }
+.rg-page > .kb-card, .rg-page > section, .rg-page > .rg-stats, .rg-page > .rg-layout, .rg-page > .rg-new { margin-bottom: 14px; }
+.rg-editor .kb-card > .rg-h2 { margin: 14px 0 10px; }
+.rg-editor .kb-card > .rg-h2:first-child { margin-top: 0; }
+
+/* new regulation */
+.rg-new { display: flex; flex-direction: column; gap: 12px; }
+.rg-start { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.rg-start legend { font-size: 13px; color: var(--ink-2, #5D5A6B); margin-bottom: 6px; padding: 0; }
+.rg-start label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 32px; }
+.rg-start small { color: var(--ink-2, #5D5A6B); }
+.rg-inline { height: 34px; width: auto; min-width: 110px; }
+
+/* batches */
+.rg-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.rg-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 6px 6px 12px; border-radius: 999px; background: #F0F0F4; font-size: 14px; }
+.rg-chip button { border: 0; background: #fff; border-radius: 999px; width: 26px; height: 26px; cursor: pointer; font-size: 15px; line-height: 1; }
+.rg-batch-add { margin-bottom: 8px; }
+
+/* tables */
+.rg-table-wrap { position: relative; overflow-x: auto; border: 1px solid #F0F0F4; border-radius: 12px; margin-bottom: 10px; }
+.rg-table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 14px; }
+.rg-table th { text-align: left; background: #FAFAFC; color: var(--ink-2, #5D5A6B); font-size: 12px; text-transform: uppercase;
+  letter-spacing: .3px; font-weight: 600; padding: 10px 12px; white-space: nowrap; }
+.rg-table td { padding: 8px 12px; border-top: 1px solid #F0F0F4; vertical-align: middle; }
+.rg-page .rg-table .kb-input { height: 38px; width: 100%; min-width: 150px; box-sizing: border-box; padding: 0 10px; font-size: 14px; }
+.rg-page .rg-table select.kb-input { min-width: 130px; }
+.rg-page input.kb-input.rg-num { width: 76px; min-width: 0; }
+.rg-page input.kb-input.rg-num-wide { width: 100px; min-width: 0; }
+.rg-page input.kb-input.rg-code { width: 70px; min-width: 0; font-weight: 600; text-transform: uppercase; }
+.rg-subjects { min-width: 900px; }
+.rg-page .rg-subjects select.kb-input { min-width: 104px; }
+.rg-need { border-color: #E9A23B !important; background: #FFFDF5 !important; }
+.rg-dirty td { background: #FAFAFF; }
+.rg-total td { background: #FAFAFC; }
+.rg-pill { white-space: nowrap; text-transform: none; }
+.rg-check { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; min-height: 40px; }
+.rg-newcat { margin-bottom: 12px; padding: 12px; border-radius: 12px; background: #FAFAFC; }
+
+.rg-savebar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 16px;
+  border-radius: 12px; background: #FFFBEB; color: #7A4106; font-size: 14px; }
+
+/* counts + semester tabs (curriculum) */
+.rg-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.rg-stats > div { background: #fff; border: 1px solid var(--line, #E7E7EC); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+.rg-stats span { font-size: 13px; color: var(--ink-2, #5D5A6B); }
+.rg-stats b { font-size: 26px; }
+.rg-stats small { font-size: 12.5px; color: var(--ink-2, #5D5A6B); }
+.rg-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.rg-tabs button { height: 40px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--line, #E7E7EC); background: #fff; font: inherit;
+  font-weight: 600; color: var(--ink-2, #5D5A6B); cursor: pointer; }
+.rg-tabs button small { font-weight: 500; margin-left: 4px; }
+.rg-tabs button.on { background: var(--brand, #4B32C3); border-color: var(--brand, #4B32C3); color: #fff; }
+
+@media (max-width: 760px) {
+  .rg-stats { grid-template-columns: minmax(0, 1fr); }
+  .rg-list { max-width: none; }
+}
+.rg-page select.kb-input.rg-outcome { min-width: 210px; }
+.rg-page input.kb-input.rg-name { min-width: 240px; }

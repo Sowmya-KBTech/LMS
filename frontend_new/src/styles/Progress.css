@@ -1,0 +1,971 @@
+/* =============================================
+   PROGRESS PAGE — src/styles/Progress.css
+   Shared by TeacherProgress & StudentProgress
+   Font: Inter | Sizes: px (matches TimetableBuilder)
+   ============================================= */
+
+.prg-page {
+  width: 100%;
+  padding: 5px clamp(10px, 3vw, 20px) 48px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+/* ── Page Header ── */
+.prg-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.prg-title {
+  margin: 0 0 5px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #17151F;
+  letter-spacing: .03em;
+}
+
+.prg-subtitle {
+  margin: 0;
+  font-size: 15px;
+  color: #5D5A6B;
+}
+
+/* ── Filter card ── */
+.prg-filter-card {
+  background: #fff;
+  border: 1px solid #E7E7EC;
+  border-radius: 16px;
+  padding: 24px 26px;
+  margin-bottom: 20px;
+  box-shadow: 0 12px 32px -24px rgba(30,41,59,.45);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-end;
+}
+
+.prg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 220px;
+  flex: 1;
+}
+
+.prg-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #5D5A6B;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.prg-select {
+  border: 1px solid #E7E7EC;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 15px;
+  font-family: inherit;
+  color: #17151F;
+  background: #fbfcfe;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  appearance: auto;
+}
+
+.prg-select:focus {
+  border-color: #4B32C3;
+  box-shadow: 0 0 0 3px rgba(59,91,255,.15);
+}
+
+/* Search */
+.prg-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #E7E7EC;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fbfcfe;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.prg-search-wrap:focus-within {
+  border-color: #4B32C3;
+  box-shadow: 0 0 0 3px rgba(59,91,255,.15);
+}
+
+.prg-search-wrap svg { color: #85839A; flex-shrink: 0; }
+
+.prg-search {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  font-family: inherit;
+  color: #17151F;
+  width: 100%;
+}
+
+.prg-search::placeholder { color: #85839A; }
+
+/* ── Summary row ── */
+.prg-summary-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.prg-summary-card {
+  background: #fff;
+  border: 1px solid #E7E7EC;
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 12px 32px -24px rgba(30,41,59,.45);
+}
+
+.prg-summary-num {
+  font-size: 28px;
+  font-weight: 700;
+  color: #17151F;
+  line-height: 1.1;
+}
+
+.prg-summary-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #5D5A6B;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+/* ── Student card grid ── */
+.prg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 18px;
+}
+
+/* ── Single student card ── */
+.prg-card {
+  background: #fff;
+  border: 1px solid #E7E7EC;
+  border-radius: 16px;
+  padding: 20px 22px;
+  box-shadow: 0 12px 32px -24px rgba(30,41,59,.45);
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+
+.prg-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 36px -20px rgba(30,41,59,.3);
+}
+
+/* Card header row */
+.prg-card-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #F6F6F8;
+}
+
+/* Avatar circle */
+.prg-avatar {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #EEEAFB;
+  color: #4B32C3;
+  font-size: 17px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #c9d4ff;
+}
+
+.prg-card-info { flex: 1; min-width: 0; }
+
+.prg-card-name {
+  margin: 0 0 3px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #17151F;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prg-card-roll {
+  font-size: 13px;
+  font-weight: 600;
+  color: #5D5A6B;
+  background: #ECECF0;
+  padding: 2px 8px;
+  border-radius: 5px;
+}
+
+/* Overall badge */
+.prg-overall-badge {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  gap: 1px;
+}
+
+.prg-overall-badge.good { background: #dcfce7; color: #15803d; border: 1.5px solid #86efac; }
+.prg-overall-badge.warn { background: #fef3c7; color: #8A4B0A; border: 1.5px solid #fde68a; }
+.prg-overall-badge.low  { background: #fee2e2; color: #B42318; border: 1.5px solid #fca5a5; }
+
+.prg-overall-num {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.prg-overall-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  opacity: 0.8;
+}
+
+/* ── Stat rows inside card ── */
+.prg-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prg-stat-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.prg-stat-icon {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #ECECF0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5D5A6B;
+  margin-top: 1px;
+}
+
+.prg-stat-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prg-stat-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #5D5A6B;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.prg-stat-value {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.prg-stat-value.good { color: #16a34a; }
+.prg-stat-value.warn { color: #d97706; }
+.prg-stat-value.low  { color: #dc2626; }
+
+/* Progress bar */
+.prg-bar-track {
+  width: 100%;
+  height: 6px;
+  background: #E7E7EC;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.prg-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.5s ease;
+}
+
+/* ── States (loading / empty / prompt) ── */
+.prg-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 64px 24px;
+  text-align: center;
+  color: #85839A;
+  font-size: 15px;
+}
+
+.prg-spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid #E7E7EC;
+  border-top-color: #4B32C3;
+  border-radius: 50%;
+  animation: prg-spin 0.7s linear infinite;
+}
+
+@keyframes prg-spin { to { transform: rotate(360deg); } }
+
+
+/* =============================================
+   STUDENT PROGRESS — subject cards
+   ============================================= */
+
+/* subject count badge in header */
+.prg-subject-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: #5D5A6B;
+  background: #ECECF0;
+  border: 1px solid #E7E7EC;
+  padding: 5px 14px;
+  border-radius: 99px;
+  align-self: flex-start;
+}
+
+/* ── Subject card ── */
+.prg-subject-card {
+  background: #fff;
+  border: 1px solid #E7E7EC;
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 20px;
+  box-shadow: 0 12px 32px -24px rgba(30,41,59,.45);
+}
+
+/* Subject header row */
+.prg-subject-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #F6F6F8;
+}
+
+.prg-subject-name {
+  margin: 0 0 5px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #17151F;
+}
+
+.prg-subject-course {
+  font-size: 14px;
+  color: #5D5A6B;
+  font-weight: 500;
+}
+
+/* Overall badge */
+.prg-overall-badge {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  gap: 1px;
+}
+
+.prg-overall-badge.good { background: #f0fdf4; color: #15803d; border: 1.5px solid #bbf7d0; }
+.prg-overall-badge.warn { background: #fffbeb; color: #8A4B0A; border: 1.5px solid #fde68a; }
+.prg-overall-badge.low  { background: #fff1f2; color: #B42318; border: 1.5px solid #fecdd3; }
+
+.prg-overall-num {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.prg-overall-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  opacity: 0.75;
+}
+
+/* ── Metric rows ── */
+.prg-metric-list {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  margin-bottom: 22px;
+}
+
+.prg-metric-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.prg-metric-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #5D5A6B;
+  width: 110px;
+  flex-shrink: 0;
+}
+
+.prg-metric-bar {
+  flex: 1;
+}
+
+.prg-metric-val {
+  font-size: 14px;
+  font-weight: 700;
+  width: 40px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* colour classes shared */
+.good { color: #16a34a; }
+.warn { color: #d97706; }
+.low  { color: #dc2626; }
+
+/* ── Pending activities section ── */
+.prg-pending {
+  background: #F6F6F8;
+  border: 1px solid #E7E7EC;
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.prg-pending-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #17151F;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.prg-pending-title svg { color: #5D5A6B; flex-shrink: 0; }
+
+.prg-pending-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 99px;
+  background: #fee2e2;
+  color: #B42318;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.prg-pending-empty {
+  font-size: 14px;
+  color: #85839A;
+  margin: 0;
+}
+
+/* Pending table */
+.prg-pending-table-wrap { overflow-x: auto; }
+
+.prg-pending-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.prg-pending-table thead tr {
+  border-bottom: 1px solid #E7E7EC;
+}
+
+.prg-pending-table th {
+  padding: 9px 12px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #5D5A6B;
+  background: transparent;
+}
+
+.prg-pending-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #F6F6F8;
+  color: #5D5A6B;
+  vertical-align: middle;
+}
+
+.prg-pending-table tbody tr:last-child td { border-bottom: none; }
+.prg-pending-table tbody tr:hover td { background: #ECECF0; }
+
+/* Type badge */
+.prg-type-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: #ECECF0;
+  color: #5D5A6B;
+}
+
+.prg-type-badge.assignment { background: #dcfce7; color: #15803d; }
+.prg-type-badge.quiz       { background: #fef3c7; color: #8A4B0A; }
+.prg-type-badge.lecture    { background: #E3DCFA; color: #4B32C3; }
+
+.prg-td-title { font-weight: 500; color: #17151F; }
+.prg-td-date  { color: #5D5A6B; white-space: nowrap; }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .prg-subject-card { padding: 18px 16px; }
+  .prg-metric-label { width: 90px; }
+}
+
+/* =============================================
+   TEACHER PROGRESS — table layout
+   ============================================= */
+
+/* ── Table card wrapper ── */
+.tp-table-card {
+  background: #fff;
+  border: 1px solid #E7E7EC;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px -24px rgba(30,41,59,.45);
+}
+
+.tp-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px 16px;
+  border-bottom: 1px solid #F6F6F8;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tp-table-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #17151F;
+}
+
+.tp-table-hint {
+  font-size: 13px;
+  color: #85839A;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ── Scrollable table ── */
+.tp-table-wrap {
+  overflow-x: auto;
+}
+
+.tp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-family: inherit;
+  min-width: 780px;
+}
+
+.tp-table thead tr {
+  background: #F6F6F8;
+  border-bottom: 1px solid #E7E7EC;
+}
+
+.tp-table th {
+  padding: 11px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #5D5A6B;
+  white-space: nowrap;
+}
+
+/* ── Body rows ── */
+.tp-row {
+  cursor: pointer;
+  transition: background 0.12s;
+  border-bottom: 1px solid #F6F6F8;
+}
+
+.tp-row:hover { background: #F6F6F8; }
+.tp-row.expanded { background: #f0f6ff; }
+.tp-row.expanded:hover { background: #e8f0fd; }
+
+.tp-table tbody .tp-expand-row {
+  border-bottom: 1px solid #E7E7EC;
+}
+
+.tp-table td {
+  padding: 14px 16px;
+  vertical-align: middle;
+  color: #5D5A6B;
+}
+
+/* Column: # */
+.tp-td-num {
+  color: #85839A;
+  font-size: 13px;
+  width: 36px;
+}
+
+/* Column: Student name */
+.tp-td-name { min-width: 180px; }
+
+.tp-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tp-avatar {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #EEEAFB;
+  color: #4B32C3;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #c9d4ff;
+}
+
+.tp-student-name {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #17151F;
+  line-height: 1.3;
+}
+
+.tp-roll {
+  display: block;
+  font-size: 12px;
+  color: #85839A;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+/* Column: metric (bar + %) */
+.tp-td-metric {
+  min-width: 120px;
+}
+
+.tp-pct {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+/* Column: overall pill */
+.tp-td-overall { width: 90px; }
+
+.tp-overall-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tp-overall-pill.good { background: #dcfce7; color: #15803d; }
+.tp-overall-pill.warn { background: #fef3c7; color: #8A4B0A; }
+.tp-overall-pill.low  { background: #fee2e2; color: #B42318; }
+
+/* Column: pending */
+.tp-td-pending { width: 100px; }
+
+.tp-pending-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: #fff1f2;
+  color: #B42318;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #fecdd3;
+}
+
+.tp-no-pending {
+  color: #cbd5e1;
+  font-size: 14px;
+}
+
+/* Column: expand toggle */
+.tp-td-toggle { width: 40px; text-align: center; }
+
+.tp-toggle-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #85839A;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  transition: background 0.12s, color 0.12s, transform 0.2s;
+}
+
+.tp-toggle-btn:hover { background: #ECECF0; color: #5D5A6B; }
+.tp-toggle-btn.open { transform: rotate(180deg); color: #4B32C3; }
+
+/* ── Expanded pending row ── */
+.tp-expand-row td {
+  padding: 0;
+  background: #F6F6F8;
+}
+
+.tp-expand-wrap {
+  padding: 16px 24px 20px 64px;
+  border-top: 1px dashed #E7E7EC;
+}
+
+.tp-expand-inner {
+  background: #fff;
+  border: 1px solid #E7E7EC;
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.tp-expand-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #5D5A6B;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin: 0 0 12px;
+}
+
+.tp-expand-title svg { color: #5D5A6B; }
+
+.tp-expand-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 99px;
+  background: #fee2e2;
+  color: #B42318;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tp-expand-empty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #85839A;
+  margin: 0;
+}
+
+.tp-expand-empty svg { color: #86efac; }
+
+/* Pending sub-table */
+.tp-pending-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tp-pending-table th {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #5D5A6B;
+  border-bottom: 1px solid #F6F6F8;
+}
+
+.tp-pending-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid #F6F6F8;
+  color: #5D5A6B;
+  vertical-align: middle;
+}
+
+.tp-pending-table tbody tr:last-child td { border-bottom: none; }
+.tp-pending-table tbody tr:hover td { background: #F6F6F8; }
+
+/* =============================================
+   TEACHER PROGRESS TABLE — FIT + ALIGNED HEADERS (v-final)
+   Every rule below is scoped under .tp-table-card so it OUTRANKS the
+   global "th, td { padding:14px; text-align:left }" rules in App.css,
+   which were overriding the colgroup padding and shifting the columns.
+   A <colgroup> in TeacherProgress.jsx pins each column width and
+   table-layout: fixed makes the browser honour those widths for BOTH
+   the header row and the body — so every header sits directly above
+   its own data with no drift.
+   ============================================= */
+.tp-table-card { max-width: 100%; overflow: hidden; }
+
+.tp-table-card .tp-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.tp-table-card .tp-table {
+  width: 100%;
+  min-width: 820px;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+/* scoped padding — beats App.css "th, td { padding: 14px }" */
+.tp-table-card .tp-table th,
+.tp-table-card .tp-table td {
+  padding: 12px 14px !important;
+  text-align: center;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+/* header cells */
+.tp-table-card .tp-table th {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #5D5A6B;
+  white-space: nowrap;
+  background: #F6F6F8;
+  text-align: center;
+}
+
+/* metric bar + % fill the column from the left, under their header */
+.tp-table-card .tp-td-metric { overflow: visible; }
+
+/* overall + pending pills anchor left under their headers, not clipped */
+.tp-table-card .tp-td-overall,
+.tp-table-card .tp-td-pending { overflow: visible; }
+
+/* name truncates instead of forcing the column wider */
+.tp-table-card .tp-td-name { overflow: hidden; }
+.tp-table-card .tp-student-name {
+  overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; display: block;
+}
+
+/* the toggle (last) column stays narrow and centred */
+.tp-table-card .tp-td-toggle { text-align: center; }
+
+/* keep the # and Student columns left-aligned (names read better left);
+   everything else (metrics, pills) is centred under its header */
+.tp-table-card .tp-table th:nth-child(1),
+.tp-table-card .tp-table td:nth-child(1),
+.tp-table-card .tp-table th:nth-child(2),
+.tp-table-card .tp-table td:nth-child(2) { text-align: left; }
+
+/* metric cells: centre the bar + % as a block under the header */
+.tp-table-card .tp-td-metric { text-align: center; }
+.tp-table-card .tp-td-metric .prg-bar-track { width: 100%; margin: 0 auto; }
+.tp-table-card .tp-td-metric .tp-pct { text-align: center; }
+
+/* pills centre under Overall / Pending headers */
+.tp-table-card .tp-td-overall,
+.tp-table-card .tp-td-pending { text-align: center; }
+
+
+/* metric columns: centre the whole bar+% block */
+.tp-table-card .tp-table td.tp-td-metric { text-align: center !important; }
+.tp-table-card .tp-table td.tp-td-metric .tp-pct { text-align: center !important; }
+.tp-table-card .tp-table td.tp-td-metric .prg-bar-track {
+  width: 100% !important;        /* fill the cell first… */
+  max-width: 90px;               /* …then cap so it stays inside the 13% cols */
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* overall + pending pill columns: centre the pill */
+.tp-table-card .tp-table td.tp-td-overall,
+.tp-table-card .tp-table td.tp-td-pending { text-align: center !important; }
+
+/* headers already centre; force it so they always match the data */
+.tp-table-card .tp-table th:nth-child(3),
+.tp-table-card .tp-table th:nth-child(4),
+.tp-table-card .tp-table th:nth-child(5),
+.tp-table-card .tp-table th:nth-child(6),
+.tp-table-card .tp-table th:nth-child(7) { text-align: center !important; }
+
+.tp-table-card .tp-table {
+  display: table !important;
+  table-layout: fixed !important;
+  width: 100% !important;
+}
+
+.tp-table-card .tp-table thead {
+  display: table-header-group !important;
+}
+
+.tp-table-card .tp-table tbody {
+  display: table-row-group !important;
+}
+
+.tp-table-card .tp-table tr {
+  display: table-row !important;
+}
+
+.tp-table-card .tp-table th,
+.tp-table-card .tp-table td {
+  display: table-cell !important;
+}

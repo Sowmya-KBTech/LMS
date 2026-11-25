@@ -1,0 +1,355 @@
+/* =============================================
+   GRADES PAGE — paste into app.css
+   ============================================= */
+
+.grades-page {
+  width: 100%;
+  padding: 3px 25px;
+  box-sizing: border-box;
+}
+
+/* ── Page Header ── */
+.grades-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.grades-title {
+  margin: 0 0 4px;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #17151F;
+  letter-spacing: -0.4px;
+}
+
+.grades-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #5D5A6B;
+}
+
+/* ── Stat Cards ── */
+.grades-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.grades-stat-card {
+  background: #fff;
+  border: 1px solid #E7E7EC;
+  border-radius: 14px;
+  padding: 22px 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.grades-stat-card:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+/* Icon circles */
+.grades-stat-icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.grades-stat-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.assign-icon { background: #eff6ff; color: #4B32C3; }
+.quiz-icon   { background: #fffbeb; color: #d97706; }
+.submit-icon { background: #f0fdf4; color: #16a34a; }
+
+/* Stat text */
+.grades-stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.grades-stat-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #85839A;
+}
+
+.grades-stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #17151F;
+  line-height: 1.1;
+}
+
+.grades-stat-max {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #85839A;
+}
+
+.grades-stat-sub {
+  font-size: 0.8rem;
+  color: #5D5A6B;
+}
+
+/* Progress bar inside assignment card */
+.grades-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.grades-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #E7E7EC;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.grades-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.6s ease;
+}
+
+.assign-fill { background: #4B32C3; }
+
+.grades-progress-pct {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4B32C3;
+  white-space: nowrap;
+}
+
+/* ── Section Cards ── */
+.grades-section {
+  background: #fff;
+  border: 1px solid #E7E7EC;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+  margin-bottom: 24px;
+}
+
+.grades-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 28px 18px;
+  border-bottom: 1px solid #F6F6F8;
+}
+
+.grades-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #17151F;
+}
+
+.grades-section-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.assign-dot { background: #4B32C3; }
+.quiz-dot   { background: #d97706; }
+
+.grades-count {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #85839A;
+  background: #ECECF0;
+  padding: 3px 10px;
+  border-radius: 99px;
+}
+
+/* ── Table ── */
+.grades-table-wrap {
+  overflow-x: auto;
+}
+
+.grades-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.grades-table thead tr {
+  background: #F6F6F8;
+}
+
+.grades-table th {
+  padding: 12px 20px;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #5D5A6B;
+  border-bottom: 1px solid #E7E7EC;
+  white-space: nowrap;
+}
+
+.grades-table td {
+  padding: 15px 20px;
+  color: #5D5A6B;
+  border-bottom: 1px solid #F6F6F8;
+  vertical-align: middle;
+}
+
+.grades-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.grades-table tbody tr {
+  transition: background 0.12s;
+}
+
+.grades-table tbody tr:hover {
+  background: #F6F6F8;
+}
+
+/* Cell variants */
+.grades-td-primary {
+  font-weight: 600;
+  color: #17151F;
+}
+
+.grades-td-score strong {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #17151F;
+}
+
+.grades-td-max {
+  font-size: 0.82rem;
+  color: #85839A;
+  margin-left: 1px;
+}
+
+.grades-td-feedback {
+  color: #5D5A6B;
+  font-size: 0.82rem;
+  max-width: 240px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grades-td-date {
+  color: #5D5A6B;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+/* ── Status badges ── */
+.grades-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: #ECECF0;
+  color: #5D5A6B;
+}
+
+.grades-badge.graded {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.grades-badge.submitted {
+  background: #E3DCFA;
+  color: #4B32C3;
+}
+
+.grades-badge.pending {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+/* ── Empty state ── */
+.grades-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 24px;
+  color: #cbd5e1;
+  text-align: center;
+}
+
+.grades-empty p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #85839A;
+}
+
+/* ── Loading ── */
+.grades-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 80px 24px;
+  color: #85839A;
+  font-size: 0.875rem;
+}
+
+.grades-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #E7E7EC;
+  border-top-color: #4B32C3;
+  border-radius: 50%;
+  animation: grades-spin 0.7s linear infinite;
+}
+
+@keyframes grades-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .grades-page {
+    padding: 20px 16px;
+  }
+
+  .grades-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .grades-section-header {
+    padding: 16px 18px 14px;
+  }
+
+  .grades-table th,
+  .grades-table td {
+    padding: 12px 14px;
+  }
+}

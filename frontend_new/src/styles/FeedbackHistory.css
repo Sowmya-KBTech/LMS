@@ -1,0 +1,133 @@
+/* =========================================================
+   FeedbackHistory.css
+   Scoped under .feedback-history so it won't affect other
+   pages that also use .card / .content from App.css
+   ========================================================= */
+
+.feedback-history {
+  --fh-bg:        #F6F6F8;
+  --fh-surface:   #ffffff;
+  --fh-ink:       #17151F;
+  --fh-muted:     #5D5A6B;
+  --fh-line:      #E7E7EC;
+  --fh-primary:   #4B32C3;   /* student → teacher */
+  --fh-teal:      #0e9384;   /* teacher → student */
+  --fh-teal-soft: #e9f6f3;
+  --fh-blue-soft: #EEEAFB;
+
+  /* page padding and background come from .content in App.css */
+  color: var(--fh-ink);
+}
+
+/* ---------- page card ---------- */
+.feedback-history .fh-card {
+  background: var(--fh-surface);
+  border: 1px solid var(--fh-line);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.feedback-history .fh-title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 4px;
+}
+
+.feedback-history .fh-subtitle {
+  margin: 0 0 22px;
+  color: var(--fh-muted);
+  font-size: 15.5px;
+}
+
+/* ---------- states ---------- */
+.feedback-history .fh-state {
+  color: var(--fh-muted);
+  font-size: 15.5px;
+  padding: 18px 0;
+  text-align: center;
+}
+
+/* ---------- feedback item ---------- */
+.feedback-history .fh-item {
+  border: 1px solid var(--fh-line);
+  border-left: 4px solid var(--fh-primary);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  background: #fcfdff;
+}
+.feedback-history .fh-item:last-child { margin-bottom: 0; }
+
+/* direction colours */
+.feedback-history .fh-item.t2s {
+  border-left-color: var(--fh-teal);
+  background: var(--fh-teal-soft);
+}
+.feedback-history .fh-item.s2t {
+  border-left-color: var(--fh-primary);
+  background: var(--fh-blue-soft);
+}
+
+/* subject heading */
+.feedback-history .fh-subject {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+
+/* small rows (teacher / student / rating) */
+.feedback-history .fh-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-bottom: 10px;
+}
+.feedback-history .fh-meta-item {
+  font-size: 14.5px;
+  color: var(--fh-muted);
+}
+.feedback-history .fh-meta-item strong {
+  color: var(--fh-ink);
+  font-weight: 600;
+}
+
+/* rating badge */
+.feedback-history .fh-rating {
+  display: inline-block;
+  font-size: 13.5px;
+  font-weight: 700;
+  background: #fff;
+  border: 1px solid var(--fh-line);
+  border-radius: 20px;
+  padding: 2px 11px;
+  color: var(--fh-ink);
+}
+
+/* message */
+.feedback-history .fh-message {
+  margin: 0 0 12px;
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--fh-ink);
+}
+
+/* date */
+.feedback-history .fh-date {
+  font-size: 13px;
+  color: var(--fh-muted);
+}
+
+/* direction chip (optional) */
+.feedback-history .fh-chip {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+}
+.feedback-history .fh-item.t2s .fh-chip { background: var(--fh-teal); color: #fff; }
+.feedback-history .fh-item.s2t .fh-chip { background: var(--fh-primary); color: #fff; }

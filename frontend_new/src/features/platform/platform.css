@@ -1,0 +1,143 @@
+/* PLATFORM CONSOLE - KB Technosoft's own screens. Uses the app's tokens (index.css). */
+
+.pf { min-height: 100vh; background: var(--paper, #F6F6F8); color: var(--ink, #17151F); }
+
+.pf-top {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px 32px; background: var(--surface, #fff); border-bottom: 1px solid var(--line, #E7E7EC);
+}
+.pf-brand { display: flex; align-items: center; gap: 12px; }
+.pf-logo {
+  width: 38px; height: 38px; border-radius: 10px; background: var(--brand, #4B32C3); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px;
+}
+.pf-brand-name { font-weight: 600; font-size: 15px; }
+.pf-brand-sub { font-size: 13px; color: var(--ink-2, #5D5A6B); }
+.pf-nav { display: flex; gap: 4px; }
+.pf-nav button {
+  border: none; background: none; padding: 10px 14px; border-radius: 8px; font: inherit; font-size: 15px;
+  color: var(--ink-2, #5D5A6B); cursor: pointer;
+}
+.pf-nav button.pf-nav-on { background: var(--brand-soft, #EEEAFB); color: var(--brand-dark, #3A25A3); font-weight: 600; }
+.pf-user { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--ink-2, #5D5A6B); }
+.pf-avatar {
+  width: 32px; height: 32px; border-radius: 50%; background: var(--soft, #ECECF0);
+  display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;
+}
+
+.pf-main { max-width: 1160px; margin: 0 auto; padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 20px; }
+.pf-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.pf-h1 { margin: 0; font-size: 26px; font-weight: 700; }
+.pf-h2 { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
+.pf-muted { margin: 4px 0 0; color: var(--ink-2, #5D5A6B); font-size: 15px; }
+.pf-strong { font-weight: 600; }
+.pf-mono { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--ink-2, #5D5A6B); }
+.pf-num { text-align: right; }
+.pf-right { text-align: right; }
+
+.pf-card {
+  background: var(--surface, #fff); border: 1px solid var(--line, #E7E7EC); border-radius: 14px; padding: 20px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.pf-flush { padding: 0; overflow: hidden; gap: 0; }
+.pf-card-bar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 20px; border-bottom: 1px solid var(--line, #E7E7EC);
+}
+.pf-search {
+  flex: 1 1 240px; max-width: 360px; padding: 10px 12px; border: 1px solid var(--line-strong, #D4D3DB);
+  border-radius: 8px; font: inherit; font-size: 15px;
+}
+
+.pf-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.pf-stats-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.pf-stat { gap: 4px; }
+.pf-stat-value { font-size: 26px; font-weight: 700; }
+.pf-tone-ok { color: var(--ok, #1F7A4D); }
+.pf-tone-bad { color: var(--bad, #B42318); }
+
+.pf-scroll { overflow-x: auto; }
+.pf-table { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 820px; }
+.pf-table th {
+  text-align: left; padding: 12px 20px; background: #FAFAFC; color: var(--ink-2, #5D5A6B);
+  font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.pf-table td { padding: 14px 20px; border-top: 1px solid #EFEFF3; }
+.pf-empty { text-align: center; color: var(--ink-2, #5D5A6B); }
+.pf-college { display: flex; align-items: center; gap: 12px; }
+.pf-initials {
+  width: 34px; height: 34px; border-radius: 8px; background: var(--brand-soft, #EEEAFB); color: var(--brand-dark, #3A25A3);
+  display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex: none;
+}
+.pf-initials-lg { width: 52px; height: 52px; border-radius: 12px; font-size: 15px; }
+/* COLLEGE LOGO */
+.pf-cmark { width: 34px; height: 34px; border-radius: 8px; object-fit: contain; background: #fff;
+  border: 1px solid var(--line, #E7E7EC); flex: none; }
+.pf-cmark-lg { width: 52px; height: 52px; border-radius: 12px; }
+.pf-logo-preview { display: block; max-width: 220px; max-height: 96px; object-fit: contain; margin: 10px 0 14px;
+  padding: 10px; border: 1px dashed var(--line, #E7E7EC); border-radius: 10px; background: #fff; }
+.pf-actions.pf-actions-start { justify-content: flex-start; }
+.pf-file { position: relative; overflow: hidden; }
+.pf-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.pf-disabled { opacity: 0.5; pointer-events: none; }
+
+.pf-badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.pf-badge-ok { background: #DCFCE7; color: #166534; }
+.pf-badge-off { background: #FEE2E2; color: #991B1B; }
+/* PHASE 3: online payments status */
+.pf-badge-warn { background: #FFEDD5; color: #9A3412; }
+.pf-badge-test { background: #EEF2FF; color: #4338CA; }
+.pf-gap-top { margin-top: 24px; }
+
+.pf-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px;
+  border-radius: 10px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; border: 1px solid transparent;
+}
+.pf-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.pf-btn-primary { background: var(--brand, #4B32C3); color: #fff; }
+.pf-btn-primary:hover:not(:disabled) { background: var(--brand-dark, #3A25A3); }
+.pf-btn-ghost { background: var(--surface, #fff); color: var(--ink, #17151F); border-color: var(--line-strong, #D4D3DB); }
+.pf-btn-danger { background: var(--surface, #fff); color: var(--bad, #B42318); border-color: #F5C2BC; }
+.pf-wide { width: 100%; }
+.pf-link {
+  align-self: flex-start; background: none; border: none; padding: 0; font: inherit; font-size: 15px;
+  color: var(--brand, #4B32C3); cursor: pointer;
+}
+
+.pf-alert { padding: 12px 14px; border-radius: 10px; font-size: 15px; line-height: 1.5; }
+.pf-alert-bad { background: var(--com-soft, #FDE7E4); color: var(--bad, #B42318); }
+.pf-alert-ok { background: var(--men-soft, #E6F3EC); color: var(--ok, #1F7A4D); }
+.pf-alert-info { background: var(--brand-soft, #EEEAFB); color: var(--brand-dark, #3A25A3); }
+
+.pf-split { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.pf-stack { flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+.pf-aside { flex: 1 1 280px; }
+.pf-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.pf-span2 { grid-column: 1 / -1; }
+.pf-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+
+.pf-field { display: flex; flex-direction: column; gap: 6px; font-size: 15px; }
+.pf-field > span { font-weight: 500; }
+.pf-field input, .pf-field select {
+  padding: 11px 12px; border: 1px solid var(--line-strong, #D4D3DB); border-radius: 8px; font: inherit; font-size: 15px;
+  background: #fff;
+}
+.pf-affix { display: flex; border: 1px solid var(--line-strong, #D4D3DB); border-radius: 8px; overflow: hidden; }
+.pf-affix input { flex: 1 1 auto; min-width: 0; border: none; border-radius: 0; }
+.pf-affix span { display: flex; align-items: center; padding: 0 12px; background: #FAFAFC; color: var(--ink-2, #5D5A6B); font-size: 15px; }
+.pf-preview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.pf-preview > div {
+  display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 10px; background: var(--brand-soft, #EEEAFB);
+}
+.pf-preview small { color: var(--brand-dark, #3A25A3); font-weight: 600; }
+.pf-steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; font-size: 15px; line-height: 1.5; }
+
+.pf-login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 32px; background: var(--paper, #F6F6F8); }
+.pf-login-card { width: 100%; max-width: 400px; gap: 16px; padding: 32px; }
+
+.pf-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (max-width: 700px) {
+  .pf-stats, .pf-stats-4, .pf-grid2, .pf-preview { grid-template-columns: 1fr; }
+  .pf-main, .pf-top { padding-left: 16px; padding-right: 16px; }
+}

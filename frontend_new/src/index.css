@@ -1,0 +1,142 @@
+/* ============================================================
+   KB Tech Campus — base tokens & reset
+   (component styles live in App.css)
+   Fonts: Figtree (text) + Space Grotesk (headings), loaded in index.html
+   ============================================================ */
+:root {
+  /* ink & paper (Option C) */
+  --ink: #17151F;
+  --ink-2: #5D5A6B;
+  --ink-3: #85839A;
+  --paper: #F6F6F8;      /* the rounded main panel */
+  --surface: #FFFFFF;
+  --line: #E7E7EC;
+  --line-strong: #D4D3DB; /* form field borders */
+  --soft: #ECECF0;
+
+  /* brand */
+  --brand: #4B32C3;       /* violet */
+  --brand-2: #5B43D6;
+  --brand-dark: #3A25A3;
+  --brand-soft: #EEEAFB;
+  --navy: #1C1433;        /* deep aubergine — logo tile, dark buttons, active tabs */
+  --dark: #1C1433;
+  --lime: #C8F169;        /* accent — badges, avatar */
+  --lavender: #DCD3FF;
+
+  /* tones (status + category) */
+  --aca: #4B32C3; --aca-soft: #EEEAFB;
+  --exm: #8A4B0A; --exm-soft: #FFF3DC;
+  --men: #1F7A4D; --men-soft: #E6F3EC;
+  --com: #B42318; --com-soft: #FDE7E4;
+  --dep: #1B5E80; --dep-soft: #E3F1F8;
+  --plc: #1F5FAF; --plc-soft: #E3F0FF;
+
+  /* status */
+  --ok: #1F7A4D;
+  --warn: #8A4B0A;
+  --bad: #B42318;
+
+  /* current accent (kept for older pages) */
+  --hc: var(--brand);
+  --hc-soft: var(--brand-soft);
+
+  /* radii */
+  --r-xl: 28px;  /* main panel */
+  --r-lg: 22px;  /* cards */
+  --r-md: 12px;
+  --r-sm: 10px;
+
+  /* legacy aliases (older pages read these) */
+  --muted: var(--ink-2);
+  --text: var(--ink-2);
+  --text-h: var(--ink);
+  --bg: var(--surface);
+  --border: var(--line);
+  --accent: var(--brand);
+  --accent-bg: rgba(75, 50, 195, 0.1);
+  --accent-border: rgba(75, 50, 195, 0.4);
+  --primary: var(--brand);
+
+  --sans: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --display: "Space Grotesk", "Figtree", system-ui, sans-serif;
+
+  font-family: var(--sans);
+  color: var(--ink);
+  background: var(--surface);
+  color-scheme: light;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ================= RESET ================= */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ================= TYPOGRAPHY ================= */
+h1, h2, h3, h4 {
+  color: var(--ink);
+  font-family: var(--display);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+h1 { font-size: 30px; letter-spacing: -0.03em; line-height: 1.05; }
+h2 { font-size: 22px; }
+h3 { font-size: 16px; }
+
+p { color: var(--ink-2); }
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2.5px solid var(--brand-2);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ================= SCROLLBAR ================= */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #D4D3DB; border-radius: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

@@ -1,0 +1,174 @@
+/* =============================================
+   MY SUBJECTS PAGE — src/styles/Courses.css
+   ============================================= */
+
+.courses-page {
+  width: 100%;
+  /* page padding comes from .content in App.css */
+  box-sizing: border-box;
+}
+
+/* ── Header ── */
+.courses-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.courses-title {
+  margin: 0 0 4px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #17151F;
+  letter-spacing: -0.3px;
+}
+
+.courses-subtitle {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #5D5A6B;
+}
+
+.courses-count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #5D5A6B;
+  background: #ECECF0;
+  border: 1px solid #E7E7EC;
+  padding: 5px 14px;
+  border-radius: 99px;
+}
+
+/* ── Table wrapper ── */
+.courses-table-wrap {
+  background: #fff;
+  border: 1px solid #E7E7EC;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Table ──
+   The global App.css has `.courses-table { max-width: 640px }` for the admin
+   Courses page. That cap leaks onto this student table and leaves a big empty
+   gap on the right. This more-specific selector overrides it so the student
+   table fills the page. */
+.courses-table-wrap .courses-table {
+  max-width: 100%;
+  width: 100%;
+}
+
+.courses-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.courses-table thead tr {
+  background: #F6F6F8;
+  border-bottom: 1px solid #E7E7EC;
+}
+
+.courses-table th {
+  padding: 13px 22px;
+  text-align: left;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #5D5A6B;
+  white-space: nowrap;
+}
+
+.courses-table td {
+  padding: 16px 22px;
+  color: #5D5A6B;
+  border-bottom: 1px solid #F6F6F8;
+  vertical-align: middle;
+}
+
+.courses-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.courses-table tbody tr {
+  transition: background 0.12s;
+}
+
+.courses-table tbody tr:hover {
+  background: #F6F6F8;
+}
+
+/* Subject column slightly bolder */
+.courses-td-subject {
+  font-weight: 500;
+  color: #17151F;
+}
+
+/* ── Open button ── */
+.courses-open-btn {
+  padding: 7px 20px;
+  background: #4B32C3;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.courses-open-btn:hover {
+  background: #4B32C3;
+}
+
+/* ── Loading ── */
+.courses-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 72px 24px;
+  color: #85839A;
+  font-size: 0.875rem;
+}
+
+.courses-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #E7E7EC;
+  border-top-color: #4B32C3;
+  border-radius: 50%;
+  animation: courses-spin 0.7s linear infinite;
+}
+
+@keyframes courses-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Empty ── */
+.courses-empty {
+  background: #fff;
+  border: 1px solid #E7E7EC;
+  border-radius: 14px;
+  padding: 48px 24px;
+  text-align: center;
+  color: #85839A;
+  font-size: 0.875rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .courses-page {
+    padding: 20px 16px;
+  }
+
+  .courses-table th,
+  .courses-table td {
+    padding: 13px 14px;
+  }
+}

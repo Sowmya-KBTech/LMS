@@ -1,0 +1,516 @@
+/* ===================== TEACHING PLANS — SHARED STYLES ===================== */
+/* Used by HODTeachingPlans.jsx, StudentTeachingPlan.jsx, TeacherTeachingPlan.jsx */
+/* All classes are prefixed tp- to avoid clashing with the global stylesheet.   */
+
+:root {
+  --tp-blue: #4B32C3;          /* login blue — brand accent */
+  --tp-line: #E7E7EC;
+  --tp-ink: #17151F;
+  --tp-muted: #5D5A6B;
+  --tp-slate: #5D5A6B;
+  --tp-grey: #85839A;
+  --tp-field-line: #d1d5db;
+  --tp-field-bg: #f9fafb;
+  --tp-white: #ffffff;
+
+  --tp-green: #3b6d11;
+  --tp-green-bar: #639922;
+  --tp-green-fill: #16a34a;
+  --tp-green-bg: #eaf3de;
+  --tp-green-bg2: #eaf3de;
+
+  --tp-amber: #854f0b;
+  --tp-amber-bar: #ba7517;
+  --tp-amber-bg: #faeeda;
+
+  --tp-red: #a32d2d;
+  --tp-red-fill: #dc2626;
+  --tp-red-bg: #fcebeb;
+  --tp-red-line: #f3c0c0;
+
+  --tp-blue-bg: #e6f1fb;
+  --tp-blue-ink: #185fa5;
+
+  --tp-teal: #0f6e56;
+  --tp-teal-bg: #e1f5ee;
+
+  --tp-grey-bg: #f1efe8;
+  --tp-grey-ink: #5f5e5a;
+  --tp-grey-bar: #b4b2a9;
+
+  --tp-hol-bg: #faf7f0;
+  --tp-hol-line: #e7d9b8;
+  --tp-hol-ink: #854f0b;
+
+  --tp-soft: #fafafa;
+  --tp-soft-line: #f0f1f3;
+  --tp-divider: #eef0f2;
+  --tp-break-bg: #f3f4f6;
+}
+
+/* ---------- layout helpers ---------- */
+/* NOTE: these caps are superseded by the WIDTH-CAP FIX at the bottom of this
+   file whenever the element is a direct child of .main .content. They are kept
+   for any nested use. */
+.tp-pad-bottom { padding-bottom: 80px; }
+.tp-w980 { max-width: 980px; }
+.tp-w920 { max-width: 920px; }
+.tp-w860 { max-width: 860px; }
+.tp-w820 { max-width: 820px; }
+
+.tp-title { font-size: 24px; font-weight: 600; margin: 0; }
+.tp-subtitle { font-size: 14px; color: var(--tp-muted); margin: 3px 0 20px; }
+.tp-loading { font-size: 14px; color: var(--tp-muted); }
+
+/* ---------- generic card ---------- */
+.tp-card {
+  background: var(--tp-white);
+  border: 1px solid var(--tp-line);
+  border-radius: 14px;
+}
+
+/* ---------- avatar ---------- */
+.tp-avatar {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 15px;
+  flex-shrink: 0;
+}
+.tp-avatar--md { width: 48px; height: 48px; font-size: 17px; }
+.tp-avatar--lg { width: 52px; height: 52px; font-size: 18px; }
+
+/* ---------- tints (bg + text) ---------- */
+.tp-tint--blue  { background: var(--tp-blue-bg);  color: var(--tp-blue-ink); }
+.tp-tint--green { background: var(--tp-green-bg);  color: var(--tp-green); }
+.tp-tint--amber { background: var(--tp-amber-bg);  color: var(--tp-amber); }
+.tp-tint--red   { background: var(--tp-red-bg);    color: var(--tp-red); }
+.tp-tint--teal  { background: var(--tp-teal-bg);   color: var(--tp-teal); }
+.tp-tint--grey  { background: var(--tp-grey-bg);   color: var(--tp-grey-ink); }
+
+/* ---------- buttons ---------- */
+.tp-btn-primary {
+  font-size: 15px; color: #fff; background: var(--tp-blue);
+  border: none; border-radius: 8px; padding: 10px 20px;
+  cursor: pointer; flex-shrink: 0;
+}
+.tp-btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+.tp-btn-outline {
+  font-size: 15px; color: var(--tp-slate); background: #fff;
+  border: 1px solid var(--tp-field-line); border-radius: 8px; padding: 10px 22px;
+  cursor: pointer; flex-shrink: 0;
+}
+.tp-btn-sm { padding: 9px 15px; font-size: 14px; }
+.tp-btn-approve {
+  font-size: 14px; padding: 9px 20px; border-radius: 8px;
+  background: var(--tp-green-fill); color: #fff; border: none; cursor: pointer;
+}
+.tp-btn-sendback {
+  font-size: 14px; padding: 9px 18px; border-radius: 8px;
+  background: var(--tp-red-bg); color: var(--tp-red);
+  border: 1px solid var(--tp-red-line); cursor: pointer;
+}
+.tp-back-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: none; border: none; color: var(--tp-blue);
+  font-size: 15px; cursor: pointer; padding: 0;
+}
+.tp-link-btn {
+  background: none; border: none; color: var(--tp-blue);
+  font-size: 13px; cursor: pointer; padding: 0;
+}
+
+/* ---------- pills / badges / chips ---------- */
+.tp-pill {
+  font-size: 14px; border-radius: 8px; padding: 8px 12px;
+  width: 130px; text-align: center; flex-shrink: 0;
+}
+.tp-badge {
+  font-size: 14px; padding: 7px 16px; border-radius: 20px;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.tp-chip {
+  font-size: 14px; padding: 6px 14px; border-radius: 7px;
+}
+
+/* ---------- KPI (HOD) ---------- */
+.tp-kpi-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 14px; margin-bottom: 18px;
+}
+.tp-kpi {
+  background: var(--tp-white); border: 1px solid var(--tp-line);
+  border-radius: 12px; padding: 18px 20px;
+}
+.tp-kpi-label { font-size: 14px; color: var(--tp-muted); margin-bottom: 6px; }
+.tp-kpi-value { font-size: 26px; font-weight: 600; color: var(--tp-ink); }
+.tp-kpi-value--blue  { color: var(--tp-blue-ink); }
+.tp-kpi-value--green { color: var(--tp-green); }
+.tp-kpi-value--amber { color: var(--tp-amber); }
+
+/* ---------- count boxes (Teacher panel) ---------- */
+.tp-count-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 16px; }
+.tp-count { border-radius: 12px; padding: 20px 14px; text-align: center; }
+.tp-count-n { font-size: 30px; font-weight: 700; line-height: 1.1; }
+.tp-count-label { font-size: 14px; margin-top: 4px; }
+.tp-count--teal  { background: var(--tp-teal-bg); }
+.tp-count--teal  .tp-count-n, .tp-count--teal  .tp-count-label { color: var(--tp-teal); }
+.tp-count--blue  { background: var(--tp-blue-bg); }
+.tp-count--blue  .tp-count-n, .tp-count--blue  .tp-count-label { color: var(--tp-blue-ink); }
+.tp-count--amber { background: var(--tp-amber-bg); }
+.tp-count--amber .tp-count-n, .tp-count--amber .tp-count-label { color: var(--tp-amber); }
+.tp-count--grey  { background: var(--tp-grey-bg); }
+.tp-count--grey  .tp-count-n, .tp-count--grey  .tp-count-label { color: var(--tp-grey-ink); }
+
+/* ---------- HOD list ---------- */
+.tp-list {
+  background: var(--tp-white); border: 1px solid var(--tp-line);
+  border-radius: 14px; padding: 6px 24px;
+}
+.tp-empty { padding: 28px 4px; text-align: center; color: var(--tp-muted); font-size: 14px; }
+.tp-row {
+  display: flex; align-items: center; gap: 16px;
+  padding: 20px 4px; border-bottom: 1px solid var(--tp-soft-line);
+}
+.tp-row:last-child { border-bottom: none; }
+.tp-row-main { flex: 1; min-width: 0; }
+.tp-row-subject { font-size: 16px; font-weight: 600; }
+.tp-row-meta { font-size: 15px; color: var(--tp-muted); margin-top: 2px; }
+
+/* ---------- legend (HOD) ---------- */
+.tp-legend-row {
+  display: flex; flex-wrap: wrap; gap: 18px; margin-top: 14px;
+  font-size: 13px; color: var(--tp-muted);
+}
+.tp-legend { display: flex; align-items: center; gap: 6px; }
+.tp-legend-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.tp-legend-dot--blue  { background: var(--tp-blue-ink); }
+.tp-legend-dot--green { background: var(--tp-green-bar); }
+.tp-legend-dot--amber { background: var(--tp-amber-bar); }
+.tp-legend-dot--red   { background: var(--tp-red-fill); }
+
+/* ---------- toast ---------- */
+.tp-toast {
+  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+  background: #17151F; color: #fff; font-size: 14px;
+  padding: 11px 18px; border-radius: 9px; z-index: 60;
+}
+
+/* ---------- review / detail head ---------- */
+.tp-review-back-wrap { padding: 18px 24px 0; }
+.tp-review-head {
+  display: flex; align-items: center; gap: 15px;
+  padding: 14px 24px 20px; border-bottom: 1px solid var(--tp-divider);
+}
+.tp-review-head-info { flex: 1; min-width: 0; }
+.tp-review-subject { font-size: 19px; font-weight: 600; color: var(--tp-ink); }
+.tp-review-meta { font-size: 15px; color: var(--tp-muted); margin-top: 2px; }
+
+/* ---------- stats / tiles ---------- */
+.tp-stats {
+  display: flex; gap: 12px; padding: 18px 24px;
+  border-bottom: 1px solid var(--tp-divider);
+}
+.tp-stat { flex: 1; background: var(--tp-field-bg); border-radius: 10px; padding: 15px 17px; }
+.tp-stat--match { background: var(--tp-green-bg2); }
+.tp-stat-label { font-size: 14px; color: var(--tp-muted); }
+.tp-stat-value { font-size: 22px; font-weight: 600; color: var(--tp-ink); margin-top: 2px; }
+.tp-stat-sub { font-size: 14px; font-weight: 400; }
+.tp-hours--over  { color: var(--tp-red); }
+.tp-hours--under { color: var(--tp-amber); }
+.tp-hours--match { color: var(--tp-green); }
+
+/* ---------- units ---------- */
+.tp-units { padding: 18px 24px; }
+.tp-units-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.tp-units-title { font-size: 15px; font-weight: 600; color: var(--tp-ink); }
+.tp-units-count { font-size: 13px; color: var(--tp-grey); }
+.tp-units-list { display: flex; flex-direction: column; gap: 6px; }
+.tp-units-list--scroll { max-height: 420px; overflow-y: auto; padding-right: 4px; }
+.tp-unit {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  background: var(--tp-soft); border: 1px solid var(--tp-soft-line); border-radius: 9px;
+}
+.tp-unit-idx {
+  width: 26px; height: 26px; border-radius: 7px;
+  background: var(--tp-blue-bg); color: var(--tp-blue-ink);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; flex-shrink: 0;
+}
+.tp-unit-topic { flex: 1; font-size: 15px; color: var(--tp-slate); }
+.tp-unit-meta { font-size: 13px; color: var(--tp-grey); flex-shrink: 0; }
+.tp-units-toggle {
+  text-align: center; font-size: 14px; color: var(--tp-blue);
+  padding: 10px 0; cursor: pointer;
+}
+
+/* ---------- comment + actions (HOD) ---------- */
+.tp-comment-sec { border-top: 1px solid var(--tp-divider); padding: 18px 24px; }
+.tp-comment-label { font-size: 14px; color: var(--tp-muted); margin-bottom: 8px; }
+.tp-textarea {
+  width: 100%; border: 1px solid var(--tp-field-line); border-radius: 8px;
+  padding: 10px; min-height: 60px; resize: vertical; font-size: 14px; box-sizing: border-box;
+}
+.tp-actions {
+  display: flex; align-items: center; gap: 12px; background: var(--tp-soft);
+  border-top: 1px solid var(--tp-divider); padding: 16px 24px;
+  border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;
+}
+.tp-actions-hint { flex: 1; font-size: 12px; color: var(--tp-grey); }
+
+/* ---------- decided footer (HOD) ---------- */
+.tp-decided {
+  border-top: 1px solid var(--tp-divider); padding: 18px 24px; background: var(--tp-soft);
+  border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;
+}
+.tp-decided-title { font-size: 15px; font-weight: 600; }
+.tp-decided-title--rejected { color: var(--tp-red); }
+.tp-decided-title--approved { color: var(--tp-green); }
+.tp-decided-comment { font-size: 13px; color: var(--tp-muted); margin-top: 6px; }
+
+/* ---------- section title (student detail / teacher form) ---------- */
+.tp-section-title { font-size: 15px; font-weight: 600; color: var(--tp-ink); margin-bottom: 12px; }
+.tp-section-rule { font-size: 14px; font-weight: 600; border-top: 1px solid var(--tp-line); padding-top: 16px; margin-bottom: 10px; }
+
+/* ---------- student detail head ---------- */
+.tp-plan-head {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 22px 18px; border-bottom: 1px solid var(--tp-divider);
+}
+.tp-plan-subject { font-size: 18px; font-weight: 600; color: var(--tp-ink); }
+.tp-plan-meta { font-size: 14px; color: var(--tp-muted); margin-top: 2px; }
+
+/* ---------- student list ---------- */
+.tp-plan-list { display: flex; flex-direction: column; gap: 10px; }
+.tp-plan-card {
+  display: flex; align-items: center; gap: 15px; cursor: pointer;
+  background: var(--tp-white); border: 1px solid var(--tp-line);
+  border-radius: 12px; padding: 18px;
+}
+.tp-plan-card-main { flex: 1; min-width: 0; }
+.tp-plan-card-title { font-size: 16px; font-weight: 600; color: var(--tp-ink); }
+.tp-plan-card-meta { font-size: 14px; color: var(--tp-muted); margin-top: 2px; }
+
+/* ---------- student empty state ---------- */
+.tp-empty-box {
+  background: var(--tp-white); border: 1px solid var(--tp-line); border-radius: 12px;
+  padding: 34px 18px; text-align: center;
+}
+.tp-empty-icon {
+  width: 48px; height: 48px; border-radius: 50%; background: var(--tp-soft);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 14px; font-size: 22px; color: var(--tp-muted);
+}
+.tp-empty-title { font-size: 15px; font-weight: 600; color: var(--tp-ink); margin-bottom: 5px; }
+.tp-empty-text { font-size: 14px; color: var(--tp-muted); max-width: 360px; margin: 0 auto; }
+
+/* ---------- teacher subject panel ---------- */
+.tp-subj-list { display: flex; flex-direction: column; gap: 12px; }
+.tp-subj-row {
+  display: flex; align-items: center; gap: 15px; cursor: pointer;
+  background: var(--tp-white); border: 1px solid var(--tp-line);
+  border-radius: 12px; padding: 18px;
+}
+.tp-subj-bar { width: 5px; height: 46px; border-radius: 3px; }
+.tp-subj-bar--teal  { background: var(--tp-teal); }
+.tp-subj-bar--blue  { background: var(--tp-blue-ink); }
+.tp-subj-bar--amber { background: var(--tp-amber); }
+.tp-subj-bar--red   { background: var(--tp-red); }
+.tp-subj-bar--grey  { background: var(--tp-grey-bar); }
+.tp-subj-main { flex: 1; min-width: 0; }
+.tp-subj-name { font-size: 16px; font-weight: 600; color: var(--tp-ink); }
+.tp-subj-meta { font-size: 14px; color: var(--tp-muted); margin-top: 2px; }
+.tp-panel-note {
+  font-size: 14px; color: var(--tp-muted);
+  background: var(--tp-white); border: 1px solid var(--tp-line);
+  border-radius: 12px; padding: 20px;
+}
+
+/* ---------- teacher form ---------- */
+.tp-form-card {
+  background: var(--tp-white); border: 1px solid var(--tp-line);
+  border-radius: 14px; padding: 22px;
+}
+.tp-form-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.tp-form-title { font-size: 15px; font-weight: 600; }
+.tp-banner { font-size: 13px; border-radius: 8px; padding: 8px 11px; margin-bottom: 12px; }
+.tp-hint {
+  font-size: 13px; color: var(--tp-blue-ink); background: var(--tp-blue-bg);
+  border-radius: 8px; padding: 9px 11px; margin-bottom: 16px;
+}
+.tp-field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.tp-field-grid-2.tp-mb18 { margin-bottom: 18px; }
+.tp-field-label { font-size: 13px; color: var(--tp-muted); display: block; margin-bottom: 5px; }
+.tp-input {
+  width: 100%; font-size: 14px; border: 1px solid var(--tp-field-line);
+  border-radius: 8px; padding: 9px 10px; background: #fff; color: var(--tp-ink);
+  height: 38px; box-sizing: border-box;
+}
+.tp-input:disabled { background: var(--tp-field-bg); color: var(--tp-muted); cursor: not-allowed; }
+.tp-input--readonly { background: var(--tp-field-bg); color: var(--tp-muted); }
+.tp-note { font-size: 14px; color: var(--tp-muted); padding: 10px 2px; }
+
+/* ---------- day-by-day grid ---------- */
+.tp-day-grid {
+  display: grid; grid-template-columns: 58px 150px 56px 1fr 32px;
+  gap: 9px; align-items: center;
+}
+.tp-day-head { font-size: 12px; color: var(--tp-grey); margin-bottom: 6px; padding: 0 2px; }
+.tp-day-row { margin-bottom: 8px; }
+.tp-day-date { font-size: 13px; color: var(--tp-muted); }
+.tp-day-block { line-height: 1.2; }
+.tp-day-weekday { font-size: 13px; color: var(--tp-slate); }
+.tp-day-period { font-size: 11px; color: var(--tp-grey); }
+.tp-day-hours {
+  font-size: 13px; text-align: center; background: var(--tp-field-bg);
+  border-radius: 6px; padding: 7px 0; color: var(--tp-muted);
+}
+.tp-day-remove {
+  width: 32px; height: 32px; border: 1px solid var(--tp-field-line);
+  border-radius: 8px; background: var(--tp-white); color: var(--tp-grey); cursor: pointer;
+}
+.tp-holiday-row {
+  display: grid; grid-template-columns: 58px 1fr; gap: 9px; align-items: center;
+  background: var(--tp-hol-bg); border: 1px dashed var(--tp-hol-line);
+  border-radius: 7px; padding: 8px 10px; margin-bottom: 8px;
+}
+.tp-holiday-date { font-size: 13px; color: var(--tp-grey); }
+.tp-holiday-text { font-size: 13px; color: var(--tp-hol-ink); }
+.tp-add-unit { background: none; border: none; color: var(--tp-blue); font-size: 13px; cursor: pointer; padding: 6px 2px; }
+.tp-all-added { font-size: 13px; color: var(--tp-muted); padding: 6px 2px; }
+
+.tp-form-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  border-top: 1px solid var(--tp-line); padding-top: 16px; margin-top: 14px;
+}
+.tp-form-foot-info { font-size: 14px; color: var(--tp-muted); }
+.tp-form-foot-actions { display: flex; gap: 9px; }
+.tp-msg { margin-top: 14px; font-size: 14px; color: var(--tp-green); }
+
+/* ---------- timetable modal ---------- */
+.tp-modal-overlay {
+  position: fixed; inset: 0; background: rgba(17, 24, 39, 0.45);
+  display: flex; align-items: flex-start; justify-content: center; padding: 24px; z-index: 50;
+}
+.tp-modal {
+  width: 100%; max-width: 640px; background: var(--tp-white);
+  border-radius: 12px; overflow: hidden; margin-top: 40px;
+}
+.tp-modal-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 16px; border-bottom: 1px solid var(--tp-line);
+}
+.tp-modal-title { font-size: 15px; font-weight: 600; }
+.tp-modal-sub { font-size: 12px; color: var(--tp-muted); }
+.tp-modal-close { background: none; border: none; font-size: 18px; color: var(--tp-muted); cursor: pointer; }
+.tp-modal-body { padding: 14px 16px; }
+.tp-tt-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.tp-tt-th { font-size: 11px; color: var(--tp-grey); font-weight: 400; padding: 4px; }
+.tp-tt-th--period { text-align: left; width: 54px; }
+.tp-tt-body { font-size: 10px; }
+.tp-tt-period { color: var(--tp-slate); padding: 3px 4px; font-size: 12px; }
+.tp-tt-cellwrap { padding: 2px; }
+.tp-tt-cell { padding: 6px 1px; text-align: center; border-radius: 4px; }
+.tp-tt-cell--plan  { background: var(--tp-blue-bg); color: var(--tp-blue-ink); }
+.tp-tt-cell--other { background: var(--tp-teal-bg); color: var(--tp-teal); }
+.tp-tt-cell--free  { color: var(--tp-field-line); }
+.tp-tt-break { background: var(--tp-break-bg); color: var(--tp-grey); text-align: center; padding: 4px; border-radius: 4px; font-size: 11px; }
+.tp-tt-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; font-size: 12px; color: var(--tp-muted); }
+.tp-tt-legend-item { display: flex; align-items: center; gap: 5px; }
+.tp-tt-swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+.tp-tt-swatch--plan { background: var(--tp-blue-bg); }
+.tp-tt-swatch--other { background: var(--tp-teal-bg); }
+.tp-tt-swatch--free { background: #fff; border: 1px solid var(--tp-field-line); }
+
+.tp-mb14 { margin-bottom: 14px; }
+
+/* ================= AI TOPIC SUGGESTION PANEL ================= */
+.tp-ai-panel {
+  background: #EEEAFB;
+  border: 1px solid #DCD3FF;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 18px;
+}
+.tp-ai-head {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.tp-ai-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--tp-blue);
+}
+.tp-ai-textarea {
+  display: block;
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  border: 1px solid #E7E7EC;
+  border-radius: 9px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: inherit;
+  color: #17151F;
+  background: #fff;
+  outline: none;
+  box-sizing: border-box;
+}
+.tp-ai-textarea::placeholder { color: #85839A; }
+.tp-ai-textarea:focus {
+  border-color: var(--tp-blue);
+  box-shadow: 0 0 0 3px rgba(40, 72, 216, 0.10);
+}
+.tp-ai-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.tp-ai-hint {
+  font-size: 13px;
+  color: #5D5A6B;
+}
+
+/* ================= ADD UNIT ROW ================= */
+.tp-add-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ===================== WIDTH-CAP FIX ===================== */
+/* .content in the global App.css is a flex column, so its children stretch to
+   full width and the global rules were beating the tp- width helpers. Every
+   teaching-plan top-level block — teacher, HOD and student — gets the same cap,
+   and align-self: flex-start stops the flex column from stretching them.
+   Keep this block LAST in the file. */
+
+/* teacher */
+.main .content .tp-w920,
+.main .content .tp-form-card,
+.main .content .tp-panel-note,
+.main .content .tp-subj-list,
+.main .content .tp-count-grid,
+/* HOD */
+.main .content .tp-w860,
+.main .content .tp-w980,
+.main .content .tp-kpi-grid,
+.main .content .tp-list,
+.main .content .tp-legend-row,
+/* student */
+.main .content .tp-w820,
+.main .content .tp-plan-list,
+.main .content .tp-empty-box {
+  max-width: 1300px !important;
+  width: 100% !important;
+  box-sizing: border-box;
+  align-self: flex-start;
+}
+/* COURSE PLAN (Part A): unit · mode line under a topic (HOD and student views) */
+.tp-unit-sub { font-size: 12.5px; color: var(--tp-muted); font-weight: 400; margin-top: 2px; }
